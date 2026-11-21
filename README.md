@@ -11,6 +11,12 @@
 
 Kensho Pro 1.0 transforms the application from a standard drawing diff tool into a complete, lightweight, Swiss Army Knife engineering review workbench (industrial PDF markup and PCB CAM engineering workbench, completely free and offline).
 
+## Application Preview
+
+![Kensho Pro SolidWorks Studio workspace](docs/images/kensho-pro-solidworks-studio.png)
+
+The SolidWorks Studio workspace combines a categorized toolbar, feature manager tree, interactive 3D CAD viewport, and mass and properties panel in one engineering review interface.
+
 ---
 
 ## What's New in Version 1.2.3
