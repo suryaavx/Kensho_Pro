@@ -1,0 +1,86 @@
+name: Build Kensho Pro 1.1.0 (Windows & Linux Portable + Setup)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build unpacked Windows directory
+        run: npx electron-builder --win dir --x64
+
+      - name: Patch executable icon and v1.1.0 metadata
+        run: node patch_exe.js "dist/win-unpacked/Kensho Pro.exe" build/icon.ico
+
+      - name: Build KenshoPro-Portable-1.1.0.exe
+        run: npx electron-builder --win portable --prepackaged dist/win-unpacked --x64
+
+      - name: Build KenshoPro-Setup-1.1.0.exe (NSIS Installer)
+        shell: pwsh
+        run: |
+          if (Test-Path "C:\Program Files (x86)\NSIS") {
+            $env:PATH = "C:\Program Files (x86)\NSIS;C:\Program Files (x86)\NSIS\Bin;$env:PATH"
+          } elseif (Test-Path "C:\Program Files\NSIS") {
+            $env:PATH = "C:\Program Files\NSIS;C:\Program Files\NSIS\Bin;$env:PATH"
+          }
+          node build_setup.js
+
+      - name: Upload Windows Portable & Setup EXEs
+        uses: actions/upload-artifact@v4
+        with:
+          name: KenshoPro-1.1.0-Windows-EXEs
+          path: |
+            dist/KenshoPro-Portable-1.1.0.exe
+            dist/KenshoPro-Setup-1.1.0.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Automated Verification Tests
+        run: node tests/v21_test_suite.js
+
+      - name: Build unpacked Linux directory
+        run: npx electron-builder --linux dir --x64
+
+      - name: Build Linux AppImage (Portable) & .deb (Setup)
+        run: npx electron-builder --linux AppImage deb --prepackaged dist/linux-unpacked --x64
+
+      - name: Build Linux Portable (.tar.gz) & Universal Setup (.run)
+        run: node build_linux_setup.js
+
+      - name: Upload Linux Portable & Setup Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: KenshoPro-1.1.0-Linux-Packages
+          path: |
+            dist/KenshoPro-Portable-1.1.0-*.AppImage
+            dist/KenshoPro-Portable-1.1.0-linux-x64.tar.gz
+            dist/KenshoPro-Setup-1.1.0-*.deb
+            dist/KenshoPro-Setup-1.1.0-linux-x64.run
+            install-linux.sh

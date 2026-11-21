@@ -1,0 +1,154 @@
+{
+  "name": "kensho-pro",
+  "version": "1.2.3",
+  "description": "Kensho Pro: compare circuit drawings, inspect PCB CAM & DXF, and edit PDFs. Kensho Studio - textportdocx.in.",
+  "author": {
+    "name": "Kensho Studio",
+    "email": "support@textportdocx.in"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/v21_test_suite.js",
+    "dist:dir": "electron-builder --win dir --x64",
+    "dist:portable": "electron-builder --win portable --prepackaged dist/win-unpacked --x64",
+    "patch:exe": "node patch_exe.js \"dist/win-unpacked/Kensho Pro.exe\" build/icon.ico",
+    "dist:setup": "node build_setup.js",
+    "dist:all": "npm run dist:dir && npm run patch:exe && npm run dist:portable && npm run dist:setup",
+    "dist:linux:dir": "electron-builder --linux dir --x64",
+    "dist:linux:portable": "electron-builder --linux AppImage --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
+    "dist:linux:setup": "electron-builder --linux deb --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
+    "dist:linux": "npm run dist:linux:dir && electron-builder --linux AppImage deb --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
+    "build": "npm run dist:all",
+    "dist": "npm run dist:all",
+    "pack": "npm run dist:dir"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "resedit": "^2.0.0"
+  },
+  "build": {
+    "appId": "in.textportdocx.kenshopro",
+    "productName": "Kensho Pro",
+    "copyright": "Kensho Studio - textportdocx.in",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icons.js",
+      "pre.js",
+      "extras.js",
+      "pro.js",
+      "LICENSE.txt",
+      "build/logo.png",
+      "app.js",
+      "editor.js",
+      "menu.js",
+      "style.css",
+      "lib/**",
+      "build/icon.png",
+      "dxf_engine.js",
+      "dxf_studio.js",
+      "rust_memory/**",
+      "cam_engine.js",
+      "measure_engine.js",
+      "worker_engine.js",
+      "worker.js",
+      "ui_ribbon.js",
+      "build/linux/**",
+      "install-linux.sh",
+      "build/icon.ico",
+      "dxf_compare_core.js",
+      "dxf_studio_tools.js",
+      "compare_memory_guard.js",
+      "ui_i18n_catalog.js",
+      "splash.html",
+      "cad3d_engine.js",
+      "solidworks_studio.js",
+      "cad_kernel.js"
+    ],
+    "win": {
+      "target": [
+        "dir",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "KenshoPro-Portable-1.2.3.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "license": "LICENSE.txt",
+      "artifactName": "KenshoPro-Setup-1.2.3.exe"
+    },
+    "compression": "normal",
+    "linux": {
+      "target": [
+        "dir",
+        "AppImage",
+        "deb",
+        "tar.gz"
+      ],
+      "icon": "build/icon.png",
+      "category": "Graphics;Engineering;Office;",
+      "executableName": "kensho-pro",
+      "synopsis": "Engineering Drawing Compare, PDF Markup Studio, AutoCAD DXF & CAM Workbench",
+      "description": "Kensho Pro 1.2.3: Compare engineering drawings pixel-by-pixel, inspect PCB Gerber RS-274X / Excellon Drill / IPC-D-356 netlists, import/export AutoCAD DXF, and edit/markup PDFs 100% offline.",
+      "mimeTypes": [
+        "application/pdf",
+        "image/vnd.dxf",
+        "application/x-dxf",
+        "application/vnd.gerber",
+        "application/x-gerber",
+        "application/x-excellon",
+        "application/x-ipc-d356",
+        "application/x-kensho",
+        "application/x-redline"
+      ],
+      "desktop": {
+        "entry": {
+          "Name": "Kensho Pro",
+          "Comment": "Engineering Drawing Compare, PDF Markup Studio, AutoCAD DXF & CAM Workbench",
+          "Keywords": "PDF;CAD;DXF;Gerber;PCB;CAM;Compare;Kensho;Engineering;",
+          "StartupWMClass": "Kensho Pro"
+        }
+      }
+    },
+    "appImage": {
+      "artifactName": "KenshoPro-Portable-1.2.3-${arch}.AppImage"
+    },
+    "deb": {
+      "artifactName": "KenshoPro-Setup-1.2.3-${arch}.deb",
+      "afterInstall": "build/linux/after-install.sh",
+      "afterRemove": "build/linux/after-remove.sh",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libdrm2",
+        "libgbm1"
+      ]
+    },
+    "rpm": {
+      "artifactName": "KenshoPro-Setup-1.2.3-${arch}.rpm",
+      "afterInstall": "build/linux/after-install.sh",
+      "afterRemove": "build/linux/after-remove.sh"
+    }
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "^6.4.299"
+  },
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "homepage": "https://textportdocx.in"
+}

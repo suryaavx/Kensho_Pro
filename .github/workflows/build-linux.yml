@@ -1,0 +1,39 @@
+name: Build Kensho Pro 1.1.0 Linux Packages (Portable & Setup)
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Automated Verification Suite
+        run: node tests/v21_test_suite.js
+
+      - name: Build Linux Portable (AppImage + tar.gz) & Setup (.deb + .run)
+        run: ./Build-Linux-Packages.sh
+
+      - name: Upload Linux Portable & Setup Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KenshoPro-1.1.0-Linux-Portable-and-Setup
+          path: |
+            dist/KenshoPro-Portable-1.1.0-*.AppImage
+            dist/KenshoPro-Portable-1.1.0-linux-x64.tar.gz
+            dist/KenshoPro-Setup-1.1.0-*.deb
+            dist/KenshoPro-Setup-1.1.0-linux-x64.run
+            install-linux.sh

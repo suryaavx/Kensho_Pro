@@ -1,0 +1,16 @@
+[package]
+name = "kensho_rust_memory"
+version = "1.1.0"
+edition = "2021"
+authors = ["Kensho Studio <support@textportdocx.in>"]
+description = "Deterministic Rust/WASM Memory Arena, ZeroizingRAII Buffer, Pinned Generational LRU Cache & Slab Pool for Kensho Pro"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

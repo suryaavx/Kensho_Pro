@@ -1,458 +1,838 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GILBERTRONIX'2K25 | P.S.R. Engineering College</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* Base Styling */
-        :root {
-            --accent-color: #00ffff; /* Cyan Accent */
-            --accent-color-rgb: 0, 255, 255;
-        }
+<html lang="en"><head><meta charset="utf-8"><title>Kensho Pro - PDF Compare &amp; Review | Kensho Studio</title><link rel="icon" href="build/icon.png" type="image/png"><link rel="stylesheet" href="style.css"></head>
+<body data-view="compare">
+<div id="busy" hidden></div>
+<div id="top">
+ <div class="brand" id="brand-about" hidden style="display:none !important" title="About Kensho Pro 1.2.3"><b>Kensho Pro</b></div>
+ <img src="build/logo.png" alt="Logo" class="rp-topbar-logo" id="rp-topbar-logo-btn" title="About Kensho Pro 1.2.3">
+ <nav id="menubar"></nav>
+ <span id="docname" hidden style="display:none !important"></span>
+ <span class="grow"></span>
+ <nav id="modes"><button data-v="compare" class="on" title="Engineering Drawing Compare & CAM Review Workspace (Ctrl+1)"><i data-ic="tabCompare"></i><span>Compare</span></button><button data-v="edit" title="PDF Markup, Redaction, Typography & Page Studio (Ctrl+2)"><i data-ic="pdfStudio"></i><span>PDF Studio</span></button><button data-v="dxf" title="CAD Studio — AutoCAD 2D DXF/DWG &amp; SolidWorks 3D STEP Editor (Ctrl+3)"><i data-ic="cadDxf"></i><span>CAD Studio</span></button><button type="button" id="nav-solidworks" title="SolidWorks 3D &amp; STEP CAD Workspace (.step, .stp, .sldprt, .sldasm, .stl, .obj) (Ctrl+4)"><i data-ic="cube3d"></i><span>SolidWorks</span></button></nav>
+ <span class="grow mode-center-spacer"></span>
+ <label class="f rp-lang-wrap" hidden style="display:none !important;font-size:11.5px;margin-right:6px;gap:5px" title="Workspace Language — International Languages (A–Z) &amp; Indian Languages (A–Z)">
+  <span class="rp-lang-lbl" id="rp-lang-lbl">Language:</span>
+  <select id="rp-lang-sel" style="height:26px;font-size:11.5px;font-weight:600;max-width:210px;width:auto">
+   <optgroup label="International Languages (A–Z)">
+    <option value="en" selected>English (International)</option>
+    <option value="ar">Arabic (العربية)</option>
+    <option value="zh-CN">Chinese Simplified (中文简体)</option>
+    <option value="zh-TW">Chinese Traditional (中文繁體)</option>
+    <option value="cs">Czech (Čeština)</option>
+    <option value="da">Danish (Dansk)</option>
+    <option value="nl">Dutch (Nederlands)</option>
+    <option value="fi">Finnish (Suomi)</option>
+    <option value="fr">French (Français)</option>
+    <option value="de">German (Deutsch)</option>
+    <option value="el">Greek (Ελληνικά)</option>
+    <option value="he">Hebrew (עברית)</option>
+    <option value="hu">Hungarian (Magyar)</option>
+    <option value="id">Indonesian (Bahasa Indonesia)</option>
+    <option value="it">Italian (Italiano)</option>
+    <option value="ja">Japanese (日本語)</option>
+    <option value="ko">Korean (한국어)</option>
+    <option value="ms">Malay (Bahasa Melayu)</option>
+    <option value="no">Norwegian (Norsk)</option>
+    <option value="fa">Persian (فارسی)</option>
+    <option value="pl">Polish (Polski)</option>
+    <option value="pt">Portuguese (Português)</option>
+    <option value="ro">Romanian (Română)</option>
+    <option value="ru">Russian (Русский)</option>
+    <option value="sk">Slovak (Slovenčina)</option>
+    <option value="es">Spanish (Español)</option>
+    <option value="sw">Swahili (Kiswahili)</option>
+    <option value="sv">Swedish (Svenska)</option>
+    <option value="th">Thai (ไทย)</option>
+    <option value="tr">Turkish (Türkçe)</option>
+    <option value="uk">Ukrainian (Українська)</option>
+    <option value="vi">Vietnamese (Tiếng Việt)</option>
+   </optgroup>
+   <optgroup label="Indian Languages (A–Z)">
+    <option value="as">Assamese (অসমীয়া)</option>
+    <option value="bn">Bengali (বাংলা)</option>
+    <option value="gu">Gujarati (ગુજરાતી)</option>
+    <option value="hi">Hindi (हिन्दी)</option>
+    <option value="kn">Kannada (ಕನ್ನಡ)</option>
+    <option value="ml">Malayalam (മലയാളം)</option>
+    <option value="mr">Marathi (मराठी)</option>
+    <option value="ne">Nepali (नेपाली)</option>
+    <option value="or">Odia (ଓଡ଼ିଆ)</option>
+    <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+    <option value="sa">Sanskrit (संस्कृतम्)</option>
+    <option value="ta">Tamil (தமிழ்)</option>
+    <option value="te">Telugu (తెలుగు)</option>
+    <option value="ur">Urdu (اردو)</option>
+   </optgroup>
+  </select>
+ </label>
+ <button id="shortcuts-btn" hidden style="display:none !important;width:0;height:0;padding:0;border:0;overflow:hidden"></button>
+ <button id="top-settings-btn" class="ib rp-top-settings-btn" title="Open Workstation Settings Page — Language, Palette Paper, Panels & Layout, Compare & CAD Defaults (Ctrl+,)"><i data-ic="gear"></i><span>Settings</span></button>
+ <button id="theme" class="ib" title="Toggle Dark / Light Theme (Ctrl+Shift+D)"><i data-ic="moon"></i></button>
+ <button id="about-btn" class="ib" hidden style="display:none !important" title="About Kensho Pro (Version 1.2.3)"><i data-ic="info"></i></button>
+ 
+</div>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #000;
-            color: #FFFFFF;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+<div id="view-compare" class="view">
+ <div class="ribbon">
+  <div class="grp"><div class="row">
+   <button class="tb A" id="openA"><i data-ic="openA"></i><span>Open A</span></button>
+   <button class="tb B" id="openB"><i data-ic="openB"></i><span>Open B</span></button>
+   <button class="tb" id="swap" title="Swap A and B"><i data-ic="swap"></i><span>Swap</span></button></div><div class="cap">Files</div></div>
+  <div class="grp"><div class="row col">
+   <label class="f">View <select id="mode"><option value="paper">Overlay on paper</option><option value="over">Overlay dark (CAM)</option><option value="diff">Differences only</option><option value="side">Side by side</option><option value="blink">Blink A / B</option><option value="A">A only</option><option value="B">B only</option></select></label>
+   <label class="f">Quality <select id="dpi"><option value="150">150 dpi (fast)</option><option value="200">200 dpi</option><option value="300" selected>300 dpi</option><option value="400">400 dpi</option><option value="600">600 dpi</option></select></label></div><div class="cap">View</div></div>
+  <div class="grp"><div class="row col">
+   <label class="f">Tolerance <input type="range" id="tol" min="0" max="150" value="40"></label>
+   <div class="row"><label class="f">Min size <input type="number" id="minpx" value="2" min="1" max="50"></label>
+   <label class="f" title="Ignore differences smaller than this many pixels of movement">Edge <input type="number" id="edge" value="0" min="0" max="4"></label></div></div><div class="cap">Detection</div></div>
+  <div class="grp"><div class="row">
+   <label class="f">Shift B <input type="number" id="dx" value="0"> <input type="number" id="dy" value="0"></label>
+   <button class="tb" id="align"><i data-ic="align"></i><span>Auto-align</span></button></div><div class="cap">Alignment</div></div>
+  <div class="grp"><div class="row col">
+   <div class="row"><label class="chk"><input type="checkbox" id="lA" checked> A only</label><label class="chk"><input type="checkbox" id="lB" checked> B only</label></div>
+   <div class="row"><label class="chk"><input type="checkbox" id="lC" checked> Common</label><label class="chk"><input type="checkbox" id="lM" checked> Markers</label></div></div><div class="cap">Layers</div></div>
+  <div class="grp"><div class="row">
+   <button class="tb" id="ignBtn" title="Drag on the drawing to ignore an area (title block, date...)"><i data-ic="ignore"></i><span>Ignore area</span></button><label class="chk" title="Tick: the area applies to every page. Untick: only the page you draw it on"><input type="checkbox" id="ignAll" checked> All pages</label></div><div class="cap">Filter</div></div>
+  <span class="grow"></span>
+  <div class="grp"><div class="row">
+   <button class="tb" id="png"><i data-ic="png"></i><span>Image</span></button>
+   <button class="tb" id="csv"><i data-ic="csv"></i><span>List</span></button>
+   <button class="tb" id="report"><i data-ic="report"></i><span>Report</span></button></div><div class="cap">Export</div></div>
+ </div>
+ <div id="pages"></div>
+ <main>
+  <div id="vp"><div id="stage"><canvas id="cv" width="0" height="0"></canvas><canvas id="lv" width="0" height="0"></canvas><canvas id="mk" width="0" height="0"></canvas></div>
+   <div id="empty">
+    <div class="rp-empty-hero rp-studio-launchpad rp-ws-start">
+     <div class="rp-ws-head">
+      <div class="rp-ws-brand">
+       <div class="rp-ws-title-wrap">
+        <div class="rp-launchpad-badge"><i data-ic="tabCompare"></i><span>COMPARE &amp; CAM VERIFICATION WORKBENCH</span></div>
+        <div class="rp-launchpad-title">Load Base (Rev A) &amp; Revised (Rev B) Drawings</div>
+       </div>
+      </div>
+      <span class="rp-ws-formats">PDF · RS-274X · Excellon · IPC-D-356 · DXF</span>
+     </div>
+     <div class="rp-ws-slots rp-sample-actions">
+      <div class="rp-ws-slot slot-a">
+       <div class="rp-ws-slot-meta"><span class="rp-slot-tag tag-a">REV A · OLD (RED)</span><b>Rev A — Old Reference Drawing (Red)</b><small>Original PDF, DXF, or CAM stack</small></div>
+       <button type="button" id="rp-cmp-open-a-btn" class="rp-sample-btn rp-btn-hero-primary" title="Open Base file (Rev A)"><i data-ic="openA"></i><span>Open Base (A)</span></button>
+      </div>
+      <div class="rp-ws-slot slot-b">
+       <div class="rp-ws-slot-meta"><span class="rp-slot-tag tag-b">REV B · NEW (GREEN)</span><b>Rev B — New Target Drawing (Green)</b><small>Modified PDF, DXF, or CAM stack</small></div>
+       <button type="button" id="rp-cmp-open-b-btn" class="rp-sample-btn" title="Open Revised file (Rev B)"><i data-ic="openB"></i><span>Open Revised (B)</span></button>
+      </div>
+     </div>
+     <div class="rp-ws-section-lbl" style="display:none">WORKSTATION MODULES</div>
+     <div class="rp-primary-launch-cards" style="display:none" role="region" aria-label="Workspace Actions">
+      <button type="button" class="rp-hero-card card-cmp" id="rp-card-compare-drawings" title="Open Base (A) and Revised (B) files">
+       <div class="rp-hero-card-ic"><i data-ic="tabCompare"></i></div>
+       <div class="rp-hero-card-body">
+        <b>A/B Drawing Compare</b>
+        <span>300–600 DPI Pixel &amp; Vector Diff</span>
+       </div>
+      </button>
+      <button type="button" class="rp-hero-card card-studio" id="rp-card-pdf-studio" title="Switch to PDF Studio">
+       <div class="rp-hero-card-ic"><i data-ic="pdfStudio"></i></div>
+       <div class="rp-hero-card-body">
+        <b>PDF Markup Studio</b>
+        <span>Direct Type, GD&amp;T, Measure &amp; Pages</span>
+       </div>
+      </button>
+      <button type="button" class="rp-hero-card card-sample" id="rp-card-cam-setup" title="Configure Multi-Layer Gerber, Drill &amp; IPC-D-356 Stackup">
+       <div class="rp-hero-card-ic"><i data-ic="pcbCam"></i></div>
+       <div class="rp-hero-card-body">
+        <b>Multi-Layer CAM Stackup</b>
+        <span>1–100+ Layer Gerber, Drill &amp; Netlist</span>
+       </div>
+      </button>
+     </div>
+     <div class="rp-ws-section-lbl">DIRECT OPERATIONS</div>
+     <div class="rp-launchpad-grid">
+      <button type="button" class="rp-launch-card" id="rp-cmp-launch-ab" title="Select Base (A) and Revised (B) files">
+       <i data-ic="open"></i>
+       <div><b>Select A &amp; B Pair</b><span>Load two files at once</span></div>
+       <kbd class="rp-ws-kbd">Ctrl+O</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-cmp-launch-cam" title="Open CAM Workbench">
+       <i data-ic="pcbCam"></i>
+       <div><b>CAM Tables &amp; DRC</b><span>D-Codes, Drills &amp; IPC Class 1/2/3</span></div>
+       <kbd class="rp-ws-kbd">CAM</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-cmp-launch-dxf" title="Import AutoCAD DXF">
+       <i data-ic="dxfIn"></i>
+       <div><b>AutoCAD DXF Studio</b><span>ASCII R12/R2000 Vector Diff</span></div>
+       <kbd class="rp-ws-kbd">DXF</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-cmp-launch-batch" title="Batch compare two folders">
+       <i data-ic="copy"></i>
+       <div><b>Batch Folder Audit</b><span>Automated Folder A vs Folder B</span></div>
+       <kbd class="rp-ws-kbd">Batch</kbd>
+      </button>
+     </div>
+    </div>
+   </div>
+   <div id="c-floating-hud" class="rp-floating-hud rp-cmp-hud" hidden>
+    <button type="button" class="rp-hud-btn" id="cHudPrevPg" title="Previous Page / Layer (Left Arrow / PageUp)"><i data-ic="prev"></i></button>
+    <span class="rp-hud-page-pill" id="cHudPageLabel" title="Click to Go to Page (Ctrl+G)">Page 1 / 1</span>
+    <button type="button" class="rp-hud-btn" id="cHudNextPg" title="Next Page / Layer (Right Arrow / PageDown)"><i data-ic="next"></i></button>
+    <span class="rp-hud-div"></span>
+    <button type="button" class="rp-hud-btn" id="cHudPrevD" title="Previous Difference (P / Shift+F3)"><i data-ic="prev"></i></button>
+    <span class="rp-hud-page-pill" id="cHudDiffLabel" title="Click to Jump to Next Difference (N)">0 Diffs</span>
+    <button type="button" class="rp-hud-btn" id="cHudNextD" title="Next Difference (N / F3)"><i data-ic="next"></i></button>
+    <span class="rp-hud-div"></span>
+    <button type="button" class="rp-hud-btn" id="cHudRotA" title="Rotate Base Drawing (Rev A) 90° Clockwise (Shift+Click: 90° CCW)"><i data-ic="rotR"></i><span style="font-size:10px;font-weight:700;margin-left:2px">A↻</span></button>
+    <button type="button" class="rp-hud-btn" id="cHudRotB" title="Rotate Revised Drawing (Rev B) 90° Clockwise (Shift+Click: 90° CCW)"><i data-ic="rotR"></i><span style="font-size:10px;font-weight:700;margin-left:2px">B↻</span></button>
+    <button type="button" class="rp-hud-btn" id="cHudMirA" title="Mirror Base Drawing (Rev A) Horizontally (Flip X) — Shift+Click for Vertical Flip Y"><i data-ic="flipH"></i><span style="font-size:10px;font-weight:700;margin-left:2px">A⇄</span></button>
+    <button type="button" class="rp-hud-btn" id="cHudMirB" title="Mirror Revised Drawing (Rev B) Horizontally (Flip X) — Shift+Click for Vertical Flip Y"><i data-ic="flipH"></i><span style="font-size:10px;font-weight:700;margin-left:2px">B⇄</span></button>
+    <input type="color" id="cHudTintA" value="#e11414" title="Rev A (Base / Removed) Color — Pick Any Color" style="width:18px;height:18px;padding:0;border:1px solid var(--line2);border-radius:4px;cursor:pointer;background:transparent">
+    <input type="color" id="cHudTintB" value="#00a53c" title="Rev B (Revised / Added) Color — Pick Any Color" style="width:18px;height:18px;padding:0;border:1px solid var(--line2);border-radius:4px;cursor:pointer;background:transparent">
+    <input type="color" id="cHudTintC" value="#94a3b8" title="Common (Unchanged Geometry) Color — Pick Any Color" style="width:18px;height:18px;padding:0;border:1px solid var(--line2);border-radius:4px;cursor:pointer;background:transparent">
+    <button type="button" class="rp-hud-btn" id="cHudCurtain" title="Toggle 60 FPS Split Curtain (C)"><i data-ic="curtain"></i></button>
+    <button type="button" class="rp-hud-btn" id="cHudBlink" title="Instant Blink Toggle A / B (Space)"><i data-ic="swap"></i></button>
+    <button type="button" class="rp-hud-btn" id="cHudLoupe" title="Toggle 4x Magnifier Loupe (L)"><i data-ic="loupe"></i></button>
+    <button type="button" class="rp-hud-btn" id="cHudCross" title="Toggle Precision Crosshair (X)"><i data-ic="crosshair"></i></button>
+    <span class="rp-hud-div"></span>
+    <button type="button" class="rp-hud-btn" id="cHudZo" title="Zoom Out (Ctrl+-)"><i data-ic="zoomout"></i></button>
+    <span class="rp-hud-page-pill" id="cHudZoomLabel" title="Click to Fit Drawing to Window (F)">100%</span>
+    <button type="button" class="rp-hud-btn" id="cHudZi" title="Zoom In (Ctrl+=)"><i data-ic="zoomin"></i></button>
+    <button type="button" class="rp-hud-btn" id="cHudFit" title="Fit &amp; Re-Sharpen Vectors (F)"><i data-ic="fit"></i></button>
+   </div>
+  </div>
+  <aside>
+   <div class="tabs"><button data-t="d" class="on" title="Pixel & Vector Difference Regions"><i data-ic="align"></i><span>Diffs</span></button><button data-t="t" title="Extracted Page Text Word Diff"><i data-ic="textDiff"></i><span>Text</span></button></div>
+   <div id="sum"></div>
+   <div class="navrow"><button id="prevD" class="sm"><i data-ic="prev"></i><span>Previous</span></button><button id="nextD" class="sm"><span>Next</span><i data-ic="next"></i></button><button id="scanAllBtn" class="sm" title="Scan all pages for differences"><i data-ic="reset"></i><span>Scan All</span></button><button id="markAll" class="sm" title="Tick every difference on this page as reviewed"><i data-ic="check"></i><span>All</span></button></div>
+   <div id="list"></div><div id="text" hidden></div>
+  </aside>
+ </main>
+ <footer><span id="st">Ready</span><span id="pos"></span></footer>
+</div>
 
-        .font-orbitron {
-            font-family: 'Orbitron', sans-serif;
-        }
-        
-        #bg-globe {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: -1;
-            opacity: 0.6;
-        }
+<div id="view-edit" class="view" hidden>
+ <div class="rp-ribbon-container rp-edit-studio-header">
+  <div class="rp-ribbon-tabs" id="edit-ribbon-tabs">
+   <button class="rp-tab-btn active" data-etab="home" title="MS Office Home Tab: File, Cursor, Direct PDF Typing, Tables, Equations &amp; Page Navigation"><i data-ic="fontFile"></i><span>Home</span></button>
+   <button class="rp-tab-btn" data-etab="typo" title="MS Office Typography &amp; Styles: Font Family, Size, Formatting, Alignment, Lists &amp; Word Quick Styles"><i data-ic="text"></i><span>Text &amp; Font</span></button>
+   <button class="rp-tab-btn" data-etab="draw" title="Freehand Pen, Eraser, Boxes, Circles, Lines, Arrows, Polygons, Revision Clouds &amp; Leader Callouts"><i data-ic="tabMarkup"></i><span>Insert &amp; Draw</span></button>
+   <button class="rp-tab-btn" data-etab="stamps" title="Inspection Pins, Check/Cross Marks, Images, Handwritten Signatures, QA Stamps, Whiteout, Redaction &amp; CAD Symbols"><i data-ic="stamp"></i><span>Stamps &amp; CAD</span></button>
+   <button class="rp-tab-btn" data-etab="review" title="Sticky Notes, Text Highlights, In-Place PDF Text Edit, Search, Distance &amp; Area Takeoffs"><i data-ic="note"></i><span>Review &amp; Measure</span></button>
+   <button class="rp-tab-btn" data-etab="pages" title="Rotate, Insert Blank/PDF, Duplicate, Delete, Crop, Resize (A4/A3/ANSI), Extract &amp; Reorder Pages"><i data-ic="pageSize"></i><span>Page Layout</span></button>
+   <button class="rp-tab-btn" data-etab="doc" title="Merge PDFs, Split PDF, Images to PDF, Watermark, Header/Footer, Page Numbers, Bates #, Flatten &amp; Optimize"><i data-ic="merge"></i><span>Document &amp; Export</span></button>
+   <button class="rp-tab-btn" data-etab="all" hidden style="display:none" title="Show All PDF Studio Sets Together"><i data-ic="allTools"></i><span>All Sets</span></button>
+   <span class="grow"></span>
+   <div class="rp-edit-quickbar">
+    <label class="f" style="font-size:11px;gap:4px" title="Active Multi-Discipline PDF Markup Layer">
+     <i data-ic="layers"></i>
+     <select id="eMarkupLayerSel" style="height:24px;font-size:11px;font-weight:600;max-width:176px;width:auto">
+      <option value="all" selected>Layer: All Disciplines</option>
+      <option value="General">Layer: General Markup</option>
+      <option value="Electrical">Layer: Electrical Review</option>
+      <option value="Mechanical">Layer: Mechanical &amp; GD&amp;T</option>
+      <option value="DFM">Layer: Manufacturing / DFM</option>
+      <option value="QA">Layer: QA Sign-Off</option>
+     </select>
+    </label>
+    <button class="rp-btn-sm on" id="eThumbBtn" title="Toggle Left Page Thumbnails Rail"><i data-ic="sidebarLeft"></i><span>Pages</span></button>
+    <button class="rp-btn-sm" id="eNightBtn" title="Toggle Dark Blueprint / Night Page Inversion (Ctrl+Shift+N)"><i data-ic="moon"></i><span>Invert</span></button>
+    <button class="rp-btn-sm" id="ePanelBtn" title="Toggle Comments Drawer (Optional)"><i data-ic="note"></i><span>Comments</span></button>
+   </div>
+  </div>
 
-        /* Elegant Card Style */
-        .elegant-card {
-            background: rgba(17, 17, 17, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            transition: all 0.3s ease-in-out;
-            padding: 2.5rem;
-            transform-style: preserve-3d;
-        }
+  <div class="ribbon rp-edit-ribbon">
+   <!-- SET 1: FILE & CLIPBOARD (Visible on all tabs) -->
+   <div class="grp" data-egrp="home"><div class="row">
+    <button class="tb" data-op="blank" id="eNewBlankBtn" title="Create New Blank A4 PDF Page to Write On (Ctrl+Shift+B)"><i data-ic="blank"></i><span>New Page</span></button>
+    <button class="tb" id="eOpen" title="Open PDF Document (Ctrl+O)"><i data-ic="open"></i><span>Open</span></button>
+    <button class="tb" id="eSave" title="Save PDF (Ctrl+S)"><i data-ic="save"></i><span>Save</span></button>
+    <button class="tb" id="eSaveAs" title="Save As New PDF (Ctrl+Shift+S)"><i data-ic="saveas"></i><span>Save As</span></button>
+    <button class="tb" data-op="print" title="Print PDF Document (Ctrl+P)"><i data-ic="print"></i><span>Print</span></button>
+    <button class="tb" id="eUndo" title="Undo Last Action (Ctrl+Z)"><i data-ic="undo"></i><span>Undo</span></button>
+    <button class="tb" id="eRedo" title="Redo Action (Ctrl+Y)"><i data-ic="redo"></i><span>Redo</span></button>
+   </div><div class="cap">File</div></div>
 
-        .elegant-card:hover {
-            border-color: rgba(var(--accent-color-rgb), 0.5);
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.3), 0 0 40px rgba(var(--accent-color-rgb), 0.1);
-        }
-        
-        /* Accent Text Glow */
-        .text-glow {
-            text-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.5), 0 0 30px rgba(var(--accent-color-rgb), 0.2);
-        }
-        
-        .text-primary { color: #FFFFFF; }
-        .text-secondary { color: #a1a1a6; }
+   <!-- SET 2: CURSOR & DIRECT PDF TYPING (Home, Review, All) -->
+   <div class="grp" data-egrp="home"><div class="row" id="eTextCursorTools">
+    <button class="tb on" data-t="select" title="Select, Move, Resize or Double-Click Any Text to Edit on Page (V)"><i data-ic="select"></i><span>Select</span></button>
+    <button class="tb" data-t="multisel" id="eMultiSelBtn" title="Ordered Multi-Select (1·2·3·4) — Click words or markups one by one in any order; preserves exact 1→2→3→4 selection order without re-sorting (M)"><i data-ic="listOl"></i><span>Multi 1·2·3</span></button>
+    <button class="tb" data-t="hand" title="Hand Tool — Drag to Pan Page (H)"><i data-ic="hand"></i><span>Pan</span></button>
+    <button class="tb" data-t="text" title="Type Text Directly on PDF Page — Click Anywhere &amp; Start Typing (T)"><i data-ic="text"></i><span>Type Text</span></button>
+    <button class="tb" data-t="edittext" title="Edit Existing PDF Text In-Place Directly on Page (E)"><i data-ic="edittext"></i><span>Edit Text</span></button>
+    <button class="tb" data-t="cnote" title="Add Sticky Note on Page — Hover Near Note to View Content (N)"><i data-ic="note"></i><span>Note</span></button>
+    <button class="tb" id="eFind" title="Find &amp; Highlight Text in Document (Ctrl+F)"><i data-ic="search"></i><span>Find</span></button>
+    <button class="tb" id="eEquationBtn" title="Insert MS Word Mathematical Equation or Formula (Alt+=)"><i data-ic="equation"></i><span>Equation</span></button>
+    <button class="tb" data-op="table" id="eInsertTableBtn" title="Insert Formatted Table onto PDF Page"><i data-ic="table"></i><span>Table</span></button>
+   </div><div class="cap">Tools &amp; Text</div></div>
 
-        /* Elegant Button Style */
-        .btn-elegant {
-            background: var(--accent-color);
-            color: #000;
-            font-weight: 700;
-            border-radius: 9999px;
-            padding: 1rem 2.5rem;
-            transition: all 0.3s ease;
-            display: inline-block;
-            letter-spacing: 0.5px;
-            box-shadow: 0 0 20px rgba(var(--accent-color-rgb), 0.4);
-        }
+   <!-- SET 3: MS OFFICE FONT & PARAGRAPH SET (Always Outside on Home, Draw, Review, All) -->
+   <div class="grp" data-egrp="typo" id="eFontSet" hidden><div class="row" style="gap:4px;flex-wrap:nowrap;align-items:center">
+    <div class="row" id="eRowFont" style="gap:4px">
+     <select id="eFontFam" style="max-width:118px;height:22px;padding:0 18px 0 6px;font-weight:600" title="Font Family (45+ Built-In MS Word, CAD &amp; Custom Loaded Fonts)">
+      <optgroup label="MS Office &amp; Modern Sans-Serif">
+       <option value="Calibri">Calibri (MS Word Body)</option>
+       <option value="Calibri Light">Calibri Light (MS Word Heading)</option>
+       <option value="Aptos">Aptos (Office 365 Default)</option>
+       <option value="Helvetica" selected>Helvetica</option>
+       <option value="Arial">Arial</option>
+       <option value="Arial Narrow">Arial Narrow</option>
+       <option value="Arial Black">Arial Black</option>
+       <option value="Segoe UI">Segoe UI</option>
+       <option value="Segoe UI Semibold">Segoe UI Semibold</option>
+       <option value="Verdana">Verdana</option>
+       <option value="Tahoma">Tahoma</option>
+       <option value="Trebuchet MS">Trebuchet MS</option>
+       <option value="Century Gothic">Century Gothic</option>
+       <option value="Candara">Candara</option>
+       <option value="Corbel">Corbel</option>
+       <option value="Franklin Gothic Medium">Franklin Gothic</option>
+       <option value="Gill Sans MT">Gill Sans MT</option>
+       <option value="Bahnschrift">Bahnschrift (DIN Technical)</option>
+       <option value="Impact">Impact</option>
+      </optgroup>
+      <optgroup label="Formal Serif, Print &amp; Math">
+       <option value="Times">Times New Roman</option>
+       <option value="Cambria">Cambria (MS Word Serif)</option>
+       <option value="Cambria Math">Cambria Math (Equations)</option>
+       <option value="Georgia">Georgia</option>
+       <option value="Garamond">Garamond</option>
+       <option value="Palatino">Palatino Linotype</option>
+       <option value="Book Antiqua">Book Antiqua</option>
+       <option value="Bookman Old Style">Bookman Old Style</option>
+       <option value="Constantia">Constantia</option>
+       <option value="Baskerville">Baskerville</option>
+       <option value="Didot">Didot</option>
+       <option value="Bodoni MT">Bodoni MT</option>
+       <option value="Rockwell">Rockwell Slab</option>
+      </optgroup>
+      <optgroup label="Engineering, CAD &amp; Monospace">
+       <option value="Consolas">Consolas Mono</option>
+       <option value="Courier">Courier New</option>
+       <option value="Cascadia Code">Cascadia Code</option>
+       <option value="Cascadia Mono">Cascadia Mono</option>
+       <option value="Lucida Console">Lucida Console</option>
+       <option value="Monaco">Monaco</option>
+       <option value="OCR A Extended">OCR A Extended (ISO)</option>
+       <option value="ISOCPEUR">ISOCPEUR (CAD Standard)</option>
+      </optgroup>
+      <optgroup label="Script, Calligraphic &amp; Display">
+       <option value="Brush Script MT">Brush Script</option>
+       <option value="Segoe Script">Segoe Script</option>
+       <option value="Segoe Print">Segoe Print</option>
+       <option value="Lucida Handwriting">Lucida Handwriting</option>
+       <option value="Comic Sans MS">Comic Sans</option>
+       <option value="Copperplate Gothic">Copperplate Gothic</option>
+       <option value="Papyrus">Papyrus</option>
+      </optgroup>
+      <optgroup label="International Multilingual Scripts (CJK, Arabic, Hebrew, Thai)">
+       <option value="Noto Sans Arabic">Noto Sans Arabic (العربية / فارسي / اردو)</option>
+       <option value="Noto Sans SC">Noto Sans SC (中文简体 / Simplified Chinese)</option>
+       <option value="Microsoft YaHei">Microsoft YaHei 微软雅黑 (Chinese CAD)</option>
+       <option value="Noto Sans TC">Noto Sans TC (中文繁體 / Traditional Chinese)</option>
+       <option value="Noto Sans Hebrew">Noto Sans Hebrew (עברית / Hebrew)</option>
+       <option value="Noto Sans JP">Noto Sans JP (日本語 / Japanese)</option>
+       <option value="Meiryo">Meiryo メイリオ (Japanese CAD)</option>
+       <option value="Yu Gothic">Yu Gothic 游ゴシック (Japanese)</option>
+       <option value="Noto Sans KR">Noto Sans KR (한국어 / Korean)</option>
+       <option value="Malgun Gothic">Malgun Gothic 맑은 고딕 (Korean)</option>
+       <option value="Noto Sans Thai">Noto Sans Thai (ไทย / Thai)</option>
+      </optgroup>
+      <optgroup label="Indian Scripts (A–Z)">
+       <option value="Noto Sans Bengali">Noto Sans Bengali (বাংলা / অসমীয়া)</option>
+       <option value="Noto Sans Devanagari">Noto Sans Devanagari (हिन्दी / मराठी / नेपाली / संस्कृतम्)</option>
+       <option value="Noto Sans Gujarati">Noto Sans Gujarati (ગુજરાતી / Gujarati)</option>
+       <option value="Noto Sans Gurmukhi">Noto Sans Gurmukhi (ਪੰਜਾਬੀ / Punjabi)</option>
+       <option value="Noto Sans Kannada">Noto Sans Kannada (ಕನ್ನಡ / Kannada)</option>
+       <option value="Noto Sans Malayalam">Noto Sans Malayalam (മലയാളം / Malayalam)</option>
+       <option value="Noto Sans Oriya">Noto Sans Oriya (ଓଡ଼ିଆ / Odia)</option>
+       <option value="Noto Sans Tamil">Noto Sans Tamil (தமிழ் / Tamil)</option>
+       <option value="Noto Sans Telugu">Noto Sans Telugu (తెలుగు / Telugu)</option>
+      </optgroup>
+      <optgroup label="Custom Loaded Fonts" id="eCustomFontGroup" hidden></optgroup>
+     </select>
+     <select id="eFontSizePreset" style="width:60px;height:22px;padding:0 16px 0 4px" title="Font Size Presets (pt)">
+      <option value="6">6 pt</option>
+      <option value="7">7 pt</option>
+      <option value="8">8 pt</option>
+      <option value="9">9 pt</option>
+      <option value="10">10 pt</option>
+      <option value="11">11 pt</option>
+      <option value="12">12 pt</option>
+      <option value="14" selected>14 pt</option>
+      <option value="16">16 pt</option>
+      <option value="18">18 pt</option>
+      <option value="20">20 pt</option>
+      <option value="22">22 pt</option>
+      <option value="24">24 pt</option>
+      <option value="26">26 pt</option>
+      <option value="28">28 pt</option>
+      <option value="32">32 pt</option>
+      <option value="36">36 pt</option>
+      <option value="48">48 pt</option>
+      <option value="60">60 pt</option>
+      <option value="72">72 pt</option>
+      <option value="96">96 pt</option>
+     </select>
+     <input type="number" id="eFontSize" value="14" min="4" max="200" hidden style="display:none;width:34px;height:22px;padding:0 2px" title="Custom Font Size (pt)">
+     <button type="button" class="rp-fmt-btn" id="eFontDec" title="Decrease Font Size (A−)"><b>A−</b></button>
+     <button type="button" class="rp-fmt-btn" id="eFontInc" title="Increase Font Size (A+)"><b>A+</b></button>
+     <button type="button" class="rp-fmt-btn" id="eChangeCase" title="Change Text Case: UPPERCASE / lowercase / Title Case / Sentence case"><i data-ic="changeCase"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eClearFmt" title="Clear All Text Formatting (Reset to Normal 12pt)"><i data-ic="eraser"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eLoadFontBtn" title="Load Custom Font File (.ttf, .otf, .woff)"><i data-ic="fontFile"></i><span>+Font</span></button>
+     <select id="eLineSpacing" style="width:62px;height:22px;font-size:10.5px;padding:0 16px 0 4px" title="Line Spacing (1.0 - 2.0)">
+      <option value="1.0">1.0×</option>
+      <option value="1.15">1.15×</option>
+      <option value="1.22" selected>1.22×</option>
+      <option value="1.5">1.5×</option>
+      <option value="2.0">2.0×</option>
+     </select>
+    </div>
+    <div class="row" id="eRowTextFmt" style="gap:2px">
+     <button type="button" class="rp-fmt-btn" id="eBold" title="Bold (B)"><i data-ic="bold"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eItalic" title="Italic (I)"><i data-ic="italic"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eUnderline" title="Underline (U)"><i data-ic="underline"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eStrike" title="Strikethrough"><i data-ic="strike"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eSubscript" title="Subscript (X₂)"><i data-ic="subscript"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eSuperscript" title="Superscript (X²)"><i data-ic="superscript"></i></button>
+     <span class="rp-hud-div" style="height:14px"></span>
+     <button type="button" class="rp-fmt-btn on" id="eAlignL" data-align="left" title="Align Text Left"><i data-ic="alignLeft"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eAlignC" data-align="center" title="Align Text Center"><i data-ic="alignCenter"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eAlignR" data-align="right" title="Align Text Right"><i data-ic="alignRight"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eAlignJ" data-align="justify" title="Justify Paragraph"><i data-ic="alignJustify"></i></button>
+     <span class="rp-hud-div" style="height:14px"></span>
+     <button type="button" class="rp-fmt-btn" id="eListUl" title="Bulleted List (•)"><i data-ic="listUl"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eListOl" title="Numbered List (1.)"><i data-ic="listOl"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eListCheck" title="Checklist Items (☑)"><i data-ic="checkMark"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eOutdent" title="Decrease Indent"><i data-ic="outdent"></i></button>
+     <button type="button" class="rp-fmt-btn" id="eIndent" title="Increase Indent"><i data-ic="indent"></i></button>
+     <span class="rp-hud-div" style="height:14px"></span>
+     <label class="f" title="Font / Text Colour" style="font-size:11px;gap:2px">A <input type="color" id="eTextColor" value="#111827" style="width:18px;height:18px"></label>
+     <label class="chk" title="Fill &amp; Border Text Box" style="font-size:11px;gap:3px"><input type="checkbox" id="eTextBg"> Box</label>
+     <input type="color" id="eBgColor" value="#fffbeb" title="Text Box Background / Highlight Colour" style="width:18px;height:18px">
+    </div>
+   </div><div class="cap">Font &amp; Paragraph</div></div>
 
-        .btn-elegant:hover {
-            background: #fff;
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(var(--accent-color-rgb), 0.5);
-        }
-        
-        /* Timeline Styling */
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -33px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #000;
-            border: 5px solid #a1a1a6;
-            z-index: 1;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 0 0 rgba(var(--accent-color-rgb), 0.5);
-        }
+   <!-- SET 3B: MS WORD QUICK TEXT STYLES FOR PDF TYPING (Home & All) -->
+   <div class="grp" data-egrp="typo" id="eWordStylesGrp" hidden><div class="row" id="eQuickStylesRow" style="gap:4px">
+    <button type="button" class="rp-word-style-card on" data-wstyle="normal" title="Normal Body Text (Calibri 12pt)">
+     <span class="ws-preview" style="font-size:12px;font-weight:500">AaBbCc</span>
+     <span class="ws-name">Normal</span>
+    </button>
+    <button type="button" class="rp-word-style-card" data-wstyle="h1" title="Heading 1 (Bold 20pt Royal Blue)">
+     <span class="ws-preview" style="font-size:14px;font-weight:700;color:#1e3a8a">AaBbCc</span>
+     <span class="ws-name">Heading 1</span>
+    </button>
+    <button type="button" class="rp-word-style-card" data-wstyle="h2" title="Heading 2 (Bold 16pt Slate)">
+     <span class="ws-preview" style="font-size:13px;font-weight:700;color:#0f172a">AaBbCc</span>
+     <span class="ws-name">Heading 2</span>
+    </button>
+    <button type="button" class="rp-word-style-card" data-wstyle="title" title="Document Title (Bold 26pt)">
+     <span class="ws-preview" style="font-size:15px;font-weight:800">AaBb</span>
+     <span class="ws-name">Title</span>
+    </button>
+    <button type="button" class="rp-word-style-card" data-wstyle="subtitle" title="Subtitle (Italic 14pt Gray)">
+     <span class="ws-preview" style="font-size:12px;font-style:italic;color:#475569">AaBbCc</span>
+     <span class="ws-name">Subtitle</span>
+    </button>
+    <button type="button" class="rp-word-style-card" data-wstyle="callout" title="Boxed Engineering Note / Callout">
+     <span class="ws-preview" style="font-size:11px;font-weight:600;background:#fffbeb;color:#92400e;padding:0 4px;border:1px solid #f59e0b;border-radius:2px">Note</span>
+     <span class="ws-name">Callout</span>
+    </button>
+   </div><div class="cap">Styles</div></div>
 
-        .timeline-item.is-visible::before {
-            border-color: var(--accent-color);
-            animation: pulse 1.5s infinite;
-        }
+   <!-- SET 4: PENS, SHAPES & MARKUP TOOLS (Home & Insert/Draw) -->
+   <div class="grp" data-egrp="draw" hidden><div class="row" id="tools">
+    <button class="tb" data-t="draw" title="Freehand Redline Pen — Opens Pen Width &amp; Colour Options (P)"><i data-ic="pen"></i><span>Pen</span></button>
+    <button class="tb" data-t="eraser" title="Eraser — Opens Eraser Mode &amp; Size Options (Z)"><i data-ic="eraser"></i><span>Eraser</span></button>
+    <button class="tb" data-t="rect" title="Rectangle Box (B)"><i data-ic="box"></i><span>Box</span></button>
+    <button class="tb" data-t="circle" title="Circle / Ellipse Shape (O)"><i data-ic="circle"></i><span>Circle</span></button>
+    <button class="tb" data-t="line" title="Straight Vector Line (L)"><i data-ic="line"></i><span>Line</span></button>
+    <button class="tb" data-t="arrow" title="Directional Vector Arrow (A)"><i data-ic="arrow"></i><span>Arrow</span></button>
+    <button class="tb" data-t="poly" title="Multi-Segment Polygon / Polyline (Y)"><i data-ic="polygon"></i><span>Polygon</span></button>
+    <button class="tb" data-t="cloud" title="ANSI/ISO Scalloped Revision Cloud (C)"><i data-ic="revCloud"></i><span>Cloud</span></button>
+    <button class="tb" data-t="leader" title="Engineering Leader Callout Arrow (D)"><i data-ic="leader"></i><span>Callout</span></button>
+   </div><div class="cap">Pen &amp; Shapes</div></div>
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(var(--accent-color-rgb), 0.5); }
-            70% { box-shadow: 0 0 0 10px rgba(var(--accent-color-rgb), 0); }
-            100% { box-shadow: 0 0 0 0 rgba(var(--accent-color-rgb), 0); }
-        }
-        
-        /* Header animation */
-        .header-scrolled {
-            background: rgba(0, 0, 0, 0.7) !important;
-            backdrop-filter: blur(15px) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+   <!-- SET 5A: PINS, STAMPS, SIGN & REDACT (Insert/Draw) -->
+   <div class="grp" data-egrp="draw" hidden><div class="row" id="eStampTools">
+    <button class="tb" data-t="pin" title="Place Numbered Inspection Pin Badge (Q)"><i data-ic="pin"></i><span>Pin</span></button>
+    <button class="tb" data-t="checkmk" title="Place Green Checkmark Tick (✓)"><i data-ic="checkMark"></i><span>Check</span></button>
+    <button class="tb" data-t="crossmk" title="Place Red Cross Mark (✗)"><i data-ic="crossMark"></i><span>Cross</span></button>
+    <button class="tb" data-t="image" title="Insert Image or Logo Overlay (I)"><i data-ic="image"></i><span>Image</span></button>
+    <button class="tb" data-t="sign" title="Draw Handwritten Signature (G)"><i data-ic="sign"></i><span>Sign</span></button>
+    <button class="tb" data-t="stamp" title="Place QA Approval Stamp (S)"><i data-ic="stamp"></i><span>Stamp</span></button>
+    <button class="tb" data-t="whiteout" title="Whiteout Cover Mask (W)"><i data-ic="whiteout"></i><span>Whiteout</span></button>
+    <button class="tb" data-t="redact" title="Permanent Black Security Redaction (X)"><i data-ic="redact"></i><span>Redact</span></button>
+   </div><div class="cap">Pins &amp; Stamps</div></div>
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
-        
-        /* JS-driven Animations */
-        .reveal {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        .reveal.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        /* Map Styling */
-        .map-container {
-            border-radius: 16px;
-            overflow: hidden;
-            height: 450px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .map-container iframe {
-            filter: invert(1) hue-rotate(180deg);
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-</head>
-<body class="antialiased">
-    <canvas id="bg-globe"></canvas>
-    <!-- Header -->
-    <header id="main-header" class="fixed top-0 left-0 w-full z-50 transition-all duration-300">
-        <nav class="container mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="font-orbitron text-xl font-bold text-primary tracking-wider">GILBERTRONIX'2K25</h1>
-            <div class="hidden md:flex items-center space-x-10 text-secondary font-medium">
-                <a href="#about" class="hover:text-primary transition-colors">About</a>
-                <a href="#events" class="hover:text-primary transition-colors">Events</a>
-                <a href="#schedule" class="hover:text-primary transition-colors">Schedule</a>
-                <a href="https://forms.gle/rjUDnC2gKMeU31q19" class="hover:text-primary transition-colors">Register</a>
-                <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
-            </div>
-            <button id="mobile-menu-button" class="md:hidden focus:outline-none text-primary">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </nav>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="md:hidden bg-black/80 backdrop-blur-lg absolute top-full left-0 w-full transform -translate-y-full -z-10 opacity-0 transition-all duration-300">
-            <div class="container mx-auto px-6 py-4 flex flex-col space-y-4 text-center">
-                <a href="#about" class="hover:text-primary transition-colors mobile-link py-2">About</a>
-                <a href="#events" class="hover:text-primary transition-colors mobile-link py-2">Events</a>
-                <a href="#schedule" class="hover:text-primary transition-colors mobile-link py-2">Schedule</a>
-                <a href="https://forms.gle/rjUDnC2gKMeU31q19" class="hover:text-primary transition-colors mobile-link py-2">Register</a>
-                <a href="#contact" class="hover:text-primary transition-colors mobile-link py-2">Contact</a>
-            </div>
-        </div>
-    </header>
+   <!-- SET 5B: CAD & ENGINEERING BLOCKS (Insert/Draw) -->
+   <div class="grp" data-egrp="draw" hidden><div class="row" id="eCadSymbolTools">
+    <button class="tb" id="eGdtBtn" title="ASME Y14.5 / ISO 1101 GD&amp;T Feature Control Frame Builder ([ ⌖ | ⌀0.05 Ⓜ | A | B | C ])"><i data-ic="gdt"></i><span>GD&amp;T</span></button>
+    <button class="tb" data-op="titleblock" id="eTitleBlockBtn" title="Stamp Interactive ISO / ANSI Engineering Title Block &amp; Revision Table"><i data-ic="titleBlock"></i><span>Title Block</span></button>
+    <button class="tb" id="eBlockLibBtn" title="Reusable Engineering Schematic Symbol, Stamp &amp; Block Library"><i data-ic="blockLib"></i><span>Symbols</span></button>
+    <button class="tb" id="eSnapGridBtn" title="Toggle 10pt Snap-to-Grid for Precision Markup Placement"><i data-ic="grid"></i><span>Snap Grid</span></button>
+    <button class="tb" id="eLockAnnBtn" title="Lock or Unlock Selected Markup Against Accidental Edits"><i data-ic="lock"></i><span>Lock</span></button>
+    <button class="tb" id="eAlignLeftBtn" title="Align Multi-Selected Markups to Left Edge"><i data-ic="align"></i><span>Align L</span></button>
+    <button class="tb" id="eAlignCenterBtn" title="Center-Align Multi-Selected Markups Horizontally"><i data-ic="align"></i><span>Center</span></button>
+    <button class="tb" id="eDistHBtn" title="Distribute 3+ Selected Markups Evenly Horizontally"><i data-ic="layers"></i><span>Distribute</span></button>
+   </div><div class="cap">Engineering CAD &amp; Align</div></div>
 
-    <!-- Main Content -->
-    <main>
-        <!-- Hero Section -->
-        <section class="min-h-screen flex items-center justify-center text-center px-4 pt-24 pb-12 relative">
-             <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black z-10"></div>
-            <div class="relative z-20">
-                <h2 class="font-orbitron text-secondary md:text-lg tracking-widest mb-4 reveal">P.S.R. ENGINEERING COLLEGE (DEPT. OF EEE)</h2>
-                <h1 class="font-orbitron text-4xl md:text-6xl font-black uppercase text-primary text-glow my-4 tracking-tight reveal" style="transition-delay: 150ms;">GILBERTRONIX'2K25</h1>
-                <p class="max-w-3xl mx-auto text-lg md:text-xl text-secondary mb-12 reveal" style="transition-delay: 300ms;">
-                    A national technical symposium where innovation meets celebration.
-                </p>
+   <!-- CONTEXTUAL STYLE & TOOL OPTIONS SET -->
+   <div class="grp rp-contextual-tool-set" data-egrp="style" id="eStyleDock" hidden><div class="row" style="gap:8px">
+    <div class="row" id="eCtxControls" style="gap:6px;flex-wrap:nowrap;align-items:center">
+     <div class="row rp-style-row" id="eRowSize" style="gap:5px">
+      <span id="eSizeLbl" class="rp-style-lbl">Pen (px)</span>
+      <button type="button" class="rp-fmt-btn" id="eStrokeDec" title="Decrease Width / Size"><b>−</b></button>
+      <input type="number" id="eSize" value="3" min="1" max="200" title="Active Tool Width / Size (px)">
+      <button type="button" class="rp-fmt-btn" id="eStrokeInc" title="Increase Width / Size"><b>+</b></button>
+      <div class="row rp-preset-bar" id="ePenPresets" style="gap:3px" title="Quick Pen &amp; Shape Width Presets">
+       <button type="button" class="rp-fmt-btn rp-sz-pre" data-sz="1" title="1px Fine">1px</button>
+       <button type="button" class="rp-fmt-btn rp-sz-pre" data-sz="2" title="2px Thin">2px</button>
+       <button type="button" class="rp-fmt-btn rp-sz-pre on" data-sz="3" title="3px Standard Pen">3px</button>
+       <button type="button" class="rp-fmt-btn rp-sz-pre" data-sz="5" title="5px Medium">5px</button>
+       <button type="button" class="rp-fmt-btn rp-sz-pre" data-sz="8" title="8px Bold Marker">8px</button>
+       <button type="button" class="rp-fmt-btn rp-sz-pre" data-sz="14" title="14px Highlighter">14px</button>
+      </div>
+      <div class="row rp-preset-bar" id="eEraserOpts" hidden style="gap:3px" title="Eraser Mode &amp; Radius Presets">
+       <select id="eEraserMode" style="max-width:105px" title="Choose Whole Markup vs Brush Radius Eraser">
+        <option value="object" selected>Whole Markup</option>
+        <option value="brush">Brush Radius</option>
+       </select>
+       <button type="button" class="rp-fmt-btn rp-er-pre" data-er="8">8px</button>
+       <button type="button" class="rp-fmt-btn rp-er-pre on" data-er="18">18px</button>
+       <button type="button" class="rp-fmt-btn rp-er-pre" data-er="36">36px</button>
+       <button type="button" class="rp-fmt-btn rp-er-pre" data-er="64">64px</button>
+       <button type="button" class="rp-fmt-btn" id="eErasePageBtn" title="Clear All Markups on Current Page"><i data-ic="trash"></i><span>Clear Page</span></button>
+      </div>
+      <div class="row rp-preset-bar" id="ePinOpts" hidden style="gap:3px" title="Pin &amp; Marker Badge Size Presets">
+       <button type="button" class="rp-fmt-btn rp-pin-pre" data-psz="18">S (18)</button>
+       <button type="button" class="rp-fmt-btn rp-pin-pre on" data-psz="24">M (24)</button>
+       <button type="button" class="rp-fmt-btn rp-pin-pre" data-psz="32">L (32)</button>
+       <button type="button" class="rp-fmt-btn rp-pin-pre" data-psz="42">XL (42)</button>
+      </div>
+     </div>
+     <div class="row rp-style-row" id="eColorStrokeCol" style="gap:6px">
+      <input type="color" id="eColor" value="#e11d48" title="Active Pen / Shape / Pin Colour">
+      <div class="rp-swatches" id="eSwatches" title="Quick Redline Colours">
+       <button type="button" class="rp-swatch on" data-col="#e11d48" style="background:#e11d48" title="Crimson"></button>
+       <button type="button" class="rp-swatch" data-col="#2563eb" style="background:#2563eb" title="Cobalt"></button>
+       <button type="button" class="rp-swatch" data-col="#059669" style="background:#059669" title="Emerald"></button>
+       <button type="button" class="rp-swatch" data-col="#d97706" style="background:#d97706" title="Amber"></button>
+       <button type="button" class="rp-swatch" data-col="#7c3aed" style="background:#7c3aed" title="Violet"></button>
+       <button type="button" class="rp-swatch" data-col="#111827" style="background:#111827" title="Black"></button>
+      </div>
+      <span class="rp-hud-div" style="height:14px"></span>
+      <label class="f" title="Opacity %">Alpha <input type="number" id="eOp" value="100" min="10" max="100">%</label>
+      <label class="f" id="eDashWrap" title="Line Dash Pattern"><select id="eDash"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option></select></label>
+      <label class="chk" id="eFillWrap" title="Fill Shape Interior"><input type="checkbox" id="eFill"> Fill</label>
+     </div>
+    </div>
+   </div><div class="cap" id="eStyleCap">Style</div></div>
 
-                <div class="max-w-4xl mx-auto p-6 mb-12 reveal" style="transition-delay: 450ms;">
-                    <div id="countdown" class="flex justify-center items-center text-center gap-4 md:gap-8">
-                        <div>
-                            <span id="days" class="font-orbitron text-4xl md:text-6xl font-bold text-primary">00</span>
-                            <p class="text-xs md:text-sm tracking-widest text-secondary">DAYS</p>
-                        </div>
-                        <div>
-                            <span id="hours" class="font-orbitron text-4xl md:text-6xl font-bold text-primary">00</span>
-                            <p class="text-xs md:text-sm tracking-widest text-secondary">HOURS</p>
-                        </div>
-                        <div>
-                            <span id="minutes" class="font-orbitron text-4xl md:text-6xl font-bold text-primary">00</span>
-                            <p class="text-xs md:text-sm tracking-widest text-secondary">MINUTES</p>
-                        </div>
-                        <div>
-                            <span id="seconds" class="font-orbitron text-4xl md:text-6xl font-bold text-primary">00</span>
-                            <p class="text-xs md:text-sm tracking-widest text-secondary">SECONDS</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+   <!-- REVIEW & MEASURE SETS (Review Tab) -->
+   <div class="grp" data-egrp="review" hidden><div class="row" id="ctools">
+    <button class="tb" data-t="cnote" title="Add Sticky Note Comment (N)"><i data-ic="note"></i><span>Note</span></button>
+    <button class="tb" data-t="chl" title="Highlight Text or Area (J)"><i data-ic="highlight"></i><span>Highlight</span></button>
+    <button class="tb" data-t="cul" title="Underline Text (U)"><i data-ic="underline"></i><span>Underline</span></button>
+    <button class="tb" data-t="cst" title="Strikeout Text (K)"><i data-ic="strike"></i><span>Strikeout</span></button>
+   </div><div class="cap">Notes</div></div>
 
-        <!-- About Section -->
-        <section id="about" class="py-24 px-4 container mx-auto relative z-10">
-            <div class="max-w-5xl mx-auto elegant-card reveal">
-                 <div class="grid md:grid-cols-2 gap-12 items-center">
-                    <div class="text-center md:text-left">
-                         <h2 class="font-orbitron text-4xl md:text-5xl font-extrabold mb-6 text-glow">About The Symposium</h2>
-                         <p class="text-lg text-secondary leading-relaxed">
-                            GILBERTRONIX'2K25 is a premier National Level Technical Symposium by the Dept. of EEE at P.S.R. Engineering College. It's a dynamic platform for students to showcase technical prowess, engage in stimulating competitions, and connect with peers from across the nation. Join us for a day of innovation, learning, and celebration.
-                         </p>
-                    </div>
-                    <div class="flex justify-center">
-                         <img src="broucher.png" alt="GILBERTRONIX'2K25 Event Brochure" class="rounded-xl shadow-2xl w-full max-w-sm">
-                    </div>
-                 </div>
-            </div>
-        </section>
+   <div class="grp" data-egrp="review" hidden><div class="row" id="mtools">
+    <button class="tb" data-t="calibrate" title="Calibrate Drawing Scale (Shift+K)"><i data-ic="calibrate"></i><span>Calibrate</span></button>
+    <button class="tb" data-t="measure" title="Measure Point-to-Point Distance (M)"><i data-ic="ruler"></i><span>Distance</span></button>
+    <button class="tb" data-t="area" title="Measure Rectangular or Polygon Area &amp; Perimeter"><i data-ic="area"></i><span>Area</span></button>
+    <button class="tb" data-t="angle" title="3-Point Angle Protractor — Click 3 Points (Start, Vertex, End) to Measure Angle (°)"><i data-ic="angle"></i><span>Angle (°)</span></button>
+    <button class="tb" data-t="rad3" title="3-Point Circle / Arc Diameter &amp; Radius Finder — Click 3 Points Along Any Hole or Arc"><i data-ic="rad3"></i><span>3-Pt ⌀/R</span></button>
+   </div><div class="cap">Measure</div></div>
 
-        <!-- Events Section -->
-        <section id="events" class="py-24 px-4 relative z-10">
-            <h2 class="font-orbitron text-4xl md:text-5xl font-extrabold text-center mb-20 text-glow reveal">Symposium Events</h2>
-            <div class="container mx-auto">
-                <div class="mb-20 reveal">
-                    <h3 class="font-orbitron text-3xl font-semibold text-center mb-12 text-primary">🎯 Technical Events</h3>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Impulse Hub</h4><p class="text-secondary">Paper Presentation</p></div>
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Ohm Quest</h4><p class="text-secondary">Tech Quiz</p></div>
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2 1m0 0l-2-1m2 1v2.5M3 12l2-1m0 0l2 1m-2-1v-2.5M3 16l2-1m0 0l2 1m-2-1v-2.5M9 19l2-1m0 0l2 1m-2-1v-2.5M15 19l2-1m0 0l2 1m-2-1v-2.5M12 6.253v1.624a3.375 3.375 0 00-3.375-3.375H8.375a3.375 3.375 0 00-3.375 3.375v1.875c0 1.86-1.515 3.375-3.375 3.375H1.625c-1.86 0-3.375-1.515-3.375-3.375V12c0-1.86 1.515-3.375 3.375-3.375h.25c1.86 0 3.375-1.515 3.375-3.375V6.625c0-1.86 1.515-3.375 3.375-3.375h1.25c1.86 0 3.375 1.515 3.375 3.375V8.5" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Creator's Corner</h4><p class="text-secondary">Project Expo</p></div>
-                    </div>
-                </div>
+   <div class="grp" data-egrp="review" hidden><div class="row" id="eFaiTools">
+    <button class="tb" data-t="fai" title="AS9102 First Article Inspection (FAI) Auto-Balloon — Click Near Any Dimension to Place Balloon &amp; Extract Tolerance"><i data-ic="faiBalloon"></i><span>FAI Balloon</span></button>
+    <button class="tb" id="eFaiExportBtn" title="Export AS9102 Form 3 First Article Inspection Schedule (.CSV)"><i data-ic="csv"></i><span>FAI CSV</span></button>
+    <button class="tb" id="eClearMeasBtn" title="Clear All Measurements on Document"><i data-ic="trash"></i><span>Clear Meas</span></button>
+   </div><div class="cap">FAI &amp; Inspect</div></div>
 
-                <div class="reveal">
-                    <h3 class="font-orbitron text-3xl font-semibold text-center mb-12 text-primary">🎭 Non-Technical Events</h3>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Cinema Cipher</h4><p class="text-secondary">Movie Based</p></div>
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V8a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Memory Matrix</h4><p class="text-secondary">Memory Game</p></div>
-                        <div class="elegant-card p-8 text-center interactive-card"><div class="text-cyan-400 mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56a14.98 14.98 0 00-5.84-2.56m0 0a14.98 14.98 0 00-5.84 2.56m5.84-2.56V4.72a6 6 0 0111.68 0v2.22m-11.68 4.82a14.983 14.983 0 01-5.84-2.56M3.41 14.37a6 6 0 015.84 7.38v-4.82" /></svg></div><h4 class="font-orbitron text-2xl font-bold text-primary mb-3">Silent Signals</h4><p class="text-secondary">Dumb Charades</p></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+   <div class="grp" data-egrp="review" hidden><div class="row">
+    <button class="tb" data-op="toA" title="Send Current PDF to Compare Slot A"><i data-ic="sendA"></i><span>Send to A</span></button>
+    <button class="tb" data-op="toB" title="Send Current PDF to Compare Slot B"><i data-ic="sendB"></i><span>Send to B</span></button>
+   </div><div class="cap">Compare</div></div>
 
-        <!-- Schedule Section -->
-        <section id="schedule" class="py-24 px-4 relative z-10">
-            <h2 class="font-orbitron text-4xl md:text-5xl font-extrabold text-center mb-20 text-glow reveal">Event Schedule</h2>
-            <div class="container mx-auto max-w-2xl">
-                <div class="relative border-l-2 border-white/10 ml-5">
-                    <div class="space-y-12">
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">9:00 AM - 9:30 AM</p><h4 class="text-xl font-bold">Registration</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">9:30 AM - 10:10 AM</p><h4 class="text-xl font-bold">Inaugural Function</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">10:10 AM - 10:40 AM</p><h4 class="text-xl font-bold">Tea Break</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">10:40 AM - 1:00 PM</p><h4 class="text-xl font-bold">Technical Events</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">1:00 PM - 2:00 PM</p><h4 class="text-xl font-bold">Lunch Break</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">2:00 PM - 3:00 PM</p><h4 class="text-xl font-bold">Non-Technical Events</h4></div>
-                        <div class="pl-12 timeline-item reveal"><p class="font-orbitron text-lg text-secondary mb-1">3:00 PM - 3:30 PM</p><h4 class="text-xl font-bold">Valedictory Function</h4><p class="text-secondary">Prize Distribution & Closing Ceremony</p></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+   <!-- PAGE LAYOUT SETS (Page Layout Tab) -->
+   <div class="grp" data-egrp="pages" hidden><div class="row">
+    <button class="tb" data-op="rotL" title="Rotate Selected Page(s) Left 90° (Ctrl+Shift+R)"><i data-ic="rotL"></i><span>Rot Left</span></button>
+    <button class="tb" data-op="rotR" title="Rotate Selected Page(s) Right 90° (Ctrl+R)"><i data-ic="rotR"></i><span>Rot Right</span></button>
+    <button class="tb" data-op="rot180" title="Rotate Selected Page(s) 180°"><i data-ic="rot180"></i><span>Rot 180°</span></button>
+    <button class="tb" data-op="flipH" title="Mirror Selected Page(s)"><i data-ic="mirror"></i><span>Mirror</span></button>
+    <button class="tb" data-op="flipV" hidden style="display:none" title="Mirror Selected Page(s) Vertically"><i data-ic="flipV"></i><span>Flip Vert</span></button>
+   </div><div class="cap">Rotate &amp; Mirror</div></div>
 
-        <!-- Register Section -->
-        <section id="register" class="py-24 px-4 relative z-10">
-            <div class="container mx-auto max-w-3xl text-center">
-                <div class="elegant-card reveal">
-                    <h2 class="font-orbitron text-4xl md:text-5xl font-extrabold mb-6 text-glow">Join Us</h2>
-                    <p class="text-lg text-secondary leading-relaxed max-w-xl mx-auto mb-8">
-                        Ready to be a part of GILBERTRONIX'2K25? Secure your spot now. The last date for registration is October 6, 2025.
-                    </p>
-                    <a href="https://forms.gle/rjUDnC2gKMeU31q19" target="_blank" class="btn-elegant text-lg uppercase">
-                        Register Now
-                    </a>
-                    <p class="text-secondary mt-4">Registration Fee: ₹250/-</p>
-                </div>
-            </div>
-        </section>
+   <div class="grp" data-egrp="pages" hidden><div class="row">
+    <button class="tb" data-op="blank" title="Insert Blank A4 Page After Current (Ctrl+Shift+B)"><i data-ic="blank"></i><span>Blank</span></button>
+    <button class="tb" data-op="insertpdf" title="Insert Another PDF After Current Page"><i data-ic="insertPdf"></i><span>Insert PDF</span></button>
+    <button class="tb" data-op="dup" title="Duplicate Selected Page(s) (Ctrl+D)"><i data-ic="copy"></i><span>Duplicate</span></button>
+    <button class="tb" data-op="del" title="Delete Selected Page(s) (Ctrl+Del)"><i data-ic="trash"></i><span>Delete</span></button>
+   </div><div class="cap">Pages</div></div>
 
-        <!-- Contact Section -->
-        <section id="contact" class="py-24 px-4 relative z-10">
-            <h2 class="font-orbitron text-4xl md:text-5xl font-extrabold text-center mb-12 text-glow reveal">Contact Us</h2>
-            <div class="container mx-auto max-w-5xl text-center grid md:grid-cols-2 gap-8">
-                <div class="elegant-card p-8 reveal"><h3 class="font-orbitron text-2xl font-bold text-primary mb-4">Faculty Coordinators</h3><p class="text-secondary">Dr. A. Geetha M.E, Ph.D</p><p class="text-secondary">Mr. S. Ramaraj M.E.,</p><p class="text-secondary">Mr. P. Sarath Chandran M.E.,</p></div>
-                <div class="elegant-card p-8 reveal"><h3 class="font-orbitron text-2xl font-bold text-primary mb-4">Student Coordinators</h3><p class="text-secondary">Mr. E. Dharanivasan</p><p class="text-secondary">Mr. B. Vishva</p><p class="text-secondary">Ms. P. Madhumathi</p></div>
-            </div>
-            <div class="text-center mt-12 max-w-2xl mx-auto reveal">
-                 <p class="text-lg text-secondary">For queries, email us or follow our Instagram.</p>
-                 <a href="mailto:gilbertronix2k25@gmail.com" class="text-primary text-xl hover:underline">gilbertronix2k25@gmail.com</a>
-                 <p class="text-lg mt-4 text-secondary">Phone: <span class="text-primary font-semibold">6262676775, 7010160315</span></p>
-            </div>
-        </section>
-    </main>
+   <div class="grp" data-egrp="pages" hidden><div class="row">
+    <button class="tb" data-op="crop" title="Crop Page Margins (mm)"><i data-ic="crop"></i><span>Crop</span></button>
+    <button class="tb" data-op="resize" title="Resize Page Dimensions (A4, A3, Letter, ANSI)"><i data-ic="pageSize"></i><span>Resize</span></button>
+    <button class="tb" data-op="margins" title="Adjust PDF Page Margins (Normal, Narrow, Wide, Custom)"><i data-ic="ruler"></i><span>Margins</span></button>
+    <button class="tb" data-op="pagecolor" title="Apply MS Word Page Background Colour / Paper Tint"><i data-ic="pageColor"></i><span>Color</span></button>
+    <button class="tb" data-op="pageborder" title="Add MS Word Page Border / Engineering Frame"><i data-ic="pageBorder"></i><span>Border</span></button>
+    <button class="tb" data-op="coverpage" title="Insert Formatted MS Word Cover Page at Page 1"><i data-ic="coverPage"></i><span>Cover</span></button>
+   </div><div class="cap">Page Setup</div></div>
 
-    <!-- Footer -->
-    <footer class="py-10 border-t border-white/10 relative z-10">
-        <div class="container mx-auto px-6 text-center text-secondary">
-            <div class="mb-4">
-                 <a href="https://www.instagram.com/gilbertronix_2k25/" target="_blank" class="text-2xl text-secondary hover:text-primary transition-colors">
-                     <svg class="inline-block w-7 h-7" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.703.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.297-.048c.852-.04 1.433-.174 1.942-.372.526-.205.972-.478 1.417-.923.445-.444.718-.891.923-1.417.198-.509.333-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.297c-.04-.852-.174-1.433-.372-1.942a3.927 3.927 0 0 0-.923-1.417A3.927 3.927 0 0 0 13.24.42c-.51-.198-1.09-.333-1.942-.372C10.445.01 10.173 0 8 0zm0 1.442c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599.28.28.453.546.598.92.11.282.24.705.275 1.486.039.843.047 1.096.047 3.232s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.47 2.47 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.478 2.478 0 0 1-.92-.598 2.48 2.48 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.232s.008-2.389.046-3.232c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.485-.276.843-.038 1.096-.047 3.232-.047zM8 4.438a3.562 3.562 0 1 0 0 7.124 3.562 3.562 0 0 0 0-7.124zM8 10.312a2.312 2.312 0 1 1 0-4.624 2.312 2.312 0 0 1 0 4.624zM12.375 3.625a.938.938 0 1 1-1.875 0 .938.938 0 0 1 1.875 0z"/></svg>
-                 </a>
-            </div>
-            <p>&copy; 2025 GILBERTRONIX'2K25. All Rights Reserved. P.S.R. Engineering College.</p>
-        </div>
-    </footer>
+   <div class="grp" data-egrp="doc" hidden><div class="row">
+    <button class="tb" data-op="extract" title="Extract Selected Page(s) to New PDF"><i data-ic="extract"></i><span>Extract</span></button>
+    <button class="tb" data-op="reverse" title="Reverse Page Order"><i data-ic="reverse"></i><span>Reverse</span></button>
+   </div><div class="cap">Order &amp; Extract</div></div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // --- 3D Globe Background ---
-            let scene, camera, renderer, globe, stars;
-            let mouseX = 0, mouseY = 0;
-            const windowHalfX = window.innerWidth / 2;
-            const windowHalfY = window.innerHeight / 2;
+   <div class="grp" data-egrp="pages" hidden><div class="row">
+    <button class="tb sm1" data-op="selAll" title="Select All Pages (Ctrl+A)"><i data-ic="selectall"></i><span>All</span></button>
+    <button class="tb sm1" data-op="selOdd" title="Select Odd Pages"><i data-ic="oddPages"></i><span>Odd</span></button>
+    <button class="tb sm1" data-op="selEven" title="Select Even Pages"><i data-ic="evenPages"></i><span>Even</span></button>
+    <button class="tb sm1" data-op="selInv" title="Invert Page Selection"><i data-ic="swap"></i><span>Invert</span></button>
+    <button class="tb sm1" data-op="selNone" title="Deselect All Pages"><i data-ic="x"></i><span>None</span></button>
+   </div><div class="cap">Select</div></div>
 
-            function initGlobe() {
-                const canvas = document.getElementById('bg-globe');
-                scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.z = 2.5;
+   <!-- DOCUMENT & EXPORT SETS (Document Tab & All) -->
+   <div class="grp" data-egrp="doc" hidden><div class="row">
+    <button class="tb" data-op="merge" title="Merge Multiple PDF Files"><i data-ic="merge"></i><span>Merge PDFs</span></button>
+    <button class="tb" data-op="split" title="Split PDF by Ranges or Pages"><i data-ic="split"></i><span>Split PDF</span></button>
+    <button class="tb" data-op="images" title="Convert Images (PNG/JPG) to PDF"><i data-ic="images"></i><span>Images→PDF</span></button>
+   </div><div class="cap">Assemble</div></div>
 
-                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+   <div class="grp" data-egrp="doc" hidden><div class="row">
+    <button class="tb" data-op="hf" title="Add Running Header &amp; Footer"><i data-ic="headerFooter"></i><span>Header/Footer</span></button>
+    <button class="tb" data-op="nums" title="Add Page Numbers"><i data-ic="pageNums"></i><span>Page Numbers</span></button>
+    <button class="tb" data-op="wm" title="Add Diagonal Watermark"><i data-ic="watermark"></i><span>Watermark</span></button>
+    <button class="tb" data-op="bates" title="Add Sequential Bates Numbering"><i data-ic="bates"></i><span>Bates #</span></button>
+    <button class="tb" id="eExportPngBtn" title="Export Current Annotated PDF Page as High-Res PNG"><i data-ic="png"></i><span>Page PNG</span></button>
+   </div><div class="cap">Numbering &amp; Export</div></div>
 
-                // Globe
-                const globeGeometry = new THREE.SphereGeometry(1, 32, 32);
-                const globeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.15 });
-                globe = new THREE.Mesh(globeGeometry, globeMaterial);
-                scene.add(globe);
+   <div class="grp" data-egrp="doc" hidden><div class="row">
+    <button class="tb" data-op="flatten" title="Flatten Annotations to Raster Images"><i data-ic="flatten"></i><span>Flatten PDF</span></button>
+    <button class="tb" data-op="opt" title="Optimize &amp; Compress PDF Structure"><i data-ic="zap"></i><span>Optimize</span></button>
+    <button class="tb" data-op="meta" title="Edit PDF Title, Author &amp; Keywords"><i data-ic="info"></i><span>Properties</span></button>
+    <button class="tb" data-op="png" title="Export Pages as High-Res PNG"><i data-ic="png"></i><span>Export PNG</span></button>
+    <button class="tb" data-op="text" title="Extract Full Document Text (.txt)"><i data-ic="textdoc"></i><span>Extract Text</span></button>
+   </div><div class="cap">Export</div></div>
 
-                // Stars
-                const starVertices = [];
-                for (let i = 0; i < 10000; i++) {
-                    const x = (Math.random() - 0.5) * 2000;
-                    const y = (Math.random() - 0.5) * 2000;
-                    const z = (Math.random() - 0.5) * 2000;
-                    if(Math.sqrt(x*x + y*y + z*z) > 100) starVertices.push(x, y, z);
-                }
-                const starGeometry = new THREE.BufferGeometry();
-                starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-                const starMaterial = new THREE.PointsMaterial({ color: 0x555555, size: 0.7 });
-                stars = new THREE.Points(starGeometry, starMaterial);
-                scene.add(stars);
-                
-                document.addEventListener('mousemove', onDocumentMouseMove);
-                window.addEventListener('resize', onWindowResize);
-            }
+   <!-- SET: PAGE & ZOOM (Packed alongside Home & Page Layout groups) -->
+   <div class="grp" data-egrp="home"><div class="row" style="gap:3px;align-items:center;flex-wrap:nowrap">
+    <div class="row" style="gap:2px">
+     <button class="tb sm1" id="ePrev" title="Previous Page (PageUp)"><i data-ic="prev"></i></button>
+     <label class="f" style="font-size:11px;gap:2px"><input type="number" id="ePg" value="1" min="1">/<span id="eN">0</span></label>
+     <button class="tb sm1" id="eNext" title="Next Page (PageDown)"><i data-ic="next"></i></button>
+    </div>
+    <div class="row" style="gap:2px">
+     <button class="tb sm1" id="eZo" title="Zoom out (Ctrl+-)"><i data-ic="zoomout"></i></button>
+     <span id="eZoomBadge" class="rp-status-chip" title="Current Page Zoom Level (Click to Fit Page)" style="cursor:pointer;margin:0;padding:0 5px;height:19px;font-size:10px">100%</span>
+     <button class="tb sm1" id="eZi" title="Zoom in (Ctrl+=)"><i data-ic="zoomin"></i></button>
+     <button class="tb sm1" id="eFit" title="Fit page to window (Ctrl+0)"><i data-ic="fit"></i></button>
+    </div>
+   </div><div class="cap">Page &amp; Zoom</div></div>
+  </div>
+ </div>
+ <div id="fbar" hidden><i data-ic="search"></i><input id="fq" placeholder="Find text across all pages..."><span id="fc"></span><button id="fPrev" class="sm" title="Previous Match (Shift+Enter)"><i data-ic="prev"></i></button><button id="fNext" class="sm" title="Next Match (Enter)"><i data-ic="next"></i></button><button id="fClose" class="sm" title="Close Search (Esc)"><i data-ic="x"></i></button></div>
+ <div id="etabs" hidden></div>
+ <div class="ebody">
+  <div id="thumbs" aria-label="Page Thumbnails"></div>
+  <div id="eview">
+   <div id="eempty">
+    <div class="rp-empty-hero rp-studio-launchpad rp-ws-start">
+     <div class="rp-ws-head">
+      <div class="rp-ws-brand">
+       <div class="rp-ws-title-wrap">
+        <div class="rp-launchpad-badge"><i data-ic="pdfStudio"></i><span>PDF MARKUP &amp; TECHNICAL PUBLISHING STUDIO</span></div>
+        <div class="rp-launchpad-title">Open or Drop a PDF / DXF Document</div>
+       </div>
+      </div>
+      <span class="rp-ws-formats">Direct Text · GD&amp;T · OSNAP · Page Ops</span>
+     </div>
+     <div class="rp-ws-slots single-slot rp-sample-actions">
+      <div class="rp-ws-slot slot-studio">
+       <div class="rp-ws-slot-meta"><span class="rp-slot-tag tag-studio">DOCUMENT</span><b>Open PDF, AutoCAD DXF, or Technical Sheet</b><small>Click anywhere on page to type, measure calibrated geometry, or edit pages</small></div>
+       <button type="button" id="rp-edit-open-btn" class="rp-sample-btn rp-btn-hero-primary" title="Open PDF file (Ctrl+O)"><i data-ic="open"></i><span>Open Document</span></button>
+      </div>
+     </div>
+     <div class="rp-ws-section-lbl">DOCUMENT &amp; SHEET COMMANDS</div>
+     <div class="rp-launchpad-grid">
+      <button type="button" class="rp-launch-card" id="rp-launch-blank" title="Create blank A4 PDF page">
+       <i data-ic="blank"></i>
+       <div><b>New Blank Sheet</b><span>Create standard A4 PDF page</span></div>
+       <kbd class="rp-ws-kbd">Ctrl+Shift+B</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-launch-merge" title="Merge multiple PDF files">
+       <i data-ic="merge"></i>
+       <div><b>Merge PDF Package</b><span>Combine multiple PDF documents</span></div>
+       <kbd class="rp-ws-kbd">Merge</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-launch-images" title="Convert images to PDF">
+       <i data-ic="images"></i>
+       <div><b>Images to PDF</b><span>Convert PNG / JPG scans to PDF</span></div>
+       <kbd class="rp-ws-kbd">Import</kbd>
+      </button>
+      <button type="button" class="rp-launch-card" id="rp-launch-compare" title="Switch to Compare view">
+       <i data-ic="tabCompare"></i>
+       <div><b>A/B Drawing Compare</b><span>Switch to Compare &amp; CAM workspace</span></div>
+       <kbd class="rp-ws-kbd">Ctrl+1</kbd>
+      </button>
+     </div>
+    </div>
+   </div>
+   <div id="rp-pdf-ruler" class="rp-pdf-ruler" hidden title="MS Word Print Layout Horizontal Ruler — Click anywhere on the PDF page below to start typing">
+    <div class="rp-pdf-ruler-margin left"></div>
+    <div class="rp-pdf-ruler-ticks" id="rp-pdf-ruler-ticks">
+     <span>1"</span><span>2"</span><span>3"</span><span>4"</span><span>5"</span><span>6"</span><span>7"</span>
+    </div>
+    <div class="rp-pdf-ruler-margin right"></div>
+   </div>
+   <div id="ewrap" hidden><canvas id="ecv"></canvas><div id="etl"></div><canvas id="eov"></canvas></div>
+   <div id="e-floating-hud" class="rp-floating-hud" hidden>
+    <button type="button" class="rp-hud-btn" id="eHudFirst" title="First Page (Ctrl+Home)"><i data-ic="pageFirst"></i></button>
+    <button type="button" class="rp-hud-btn" id="eHudPrev" title="Previous Page (PageUp)"><i data-ic="prev"></i></button>
+    <span class="rp-hud-page-pill" id="eHudPageLabel" title="Click to Go to Page (Ctrl+G)">Page 1 / 1</span>
+    <button type="button" class="rp-hud-btn" id="eHudNext" title="Next Page (PageDown)"><i data-ic="next"></i></button>
+    <button type="button" class="rp-hud-btn" id="eHudLast" title="Last Page (Ctrl+End)"><i data-ic="pageLast"></i></button>
+    <span class="rp-hud-div"></span>
+    <button type="button" class="rp-hud-btn on" id="eHudSelect" title="Select Tool (V)"><i data-ic="select"></i></button>
+    <button type="button" class="rp-hud-btn" id="eHudHand" title="Pan / Hand Tool (H)"><i data-ic="hand"></i></button>
+    <button type="button" class="rp-hud-btn" id="eHudNote" title="Add Sticky Note (N)"><i data-ic="note"></i></button>
+    <button type="button" class="rp-hud-btn" id="eHudMeasure" title="Measure Distance (M)"><i data-ic="ruler"></i></button>
+    <span class="rp-hud-div"></span>
+    <button type="button" class="rp-hud-btn" id="eHudZo" title="Zoom Out (Ctrl+-)"><i data-ic="zoomout"></i></button>
+    <select id="eZoomPreset" class="rp-hud-zoom-select" title="Zoom Level Preset">
+     <option value="page">Fit Page</option>
+     <option value="width">Fit Width</option>
+     <option value="0.5">50%</option>
+     <option value="0.75">75%</option>
+     <option value="1" selected>100%</option>
+     <option value="1.25">125%</option>
+     <option value="1.5">150%</option>
+     <option value="2">200%</option>
+     <option value="3">300%</option>
+    </select>
+    <button type="button" class="rp-hud-btn" id="eHudZi" title="Zoom In (Ctrl+=)"><i data-ic="zoomin"></i></button>
+   </div>
+  </div>
+  <aside id="etools" class="rp-collapsed" hidden>
+   <div class="tabs"><button id="tTab" class="on" title="Document Summary"><i data-ic="gear"></i><span>Info</span></button><button id="cTab" title="PDF Review Comments &amp; Replies"><i data-ic="note"></i><span>Comments (0)</span></button></div>
+   <div id="pTools">
+    <div id="eDocInfoCard" class="rp-doc-info-card">
+     <div class="rp-doc-info-head">
+      <i data-ic="info"></i>
+      <div class="rp-doc-info-title"><b id="eInfoName">No Document Loaded</b><span id="eInfoSub">Open or drop a PDF to inspect</span></div>
+     </div>
+     <div class="rp-doc-info-grid">
+      <div><small>Page Size</small><b id="eInfoDim">—</b></div>
+      <div><small>Pages</small><b id="eInfoPages">0</b></div>
+      <div><small>File Size</small><b id="eInfoSize">—</b></div>
+      <div><small>Markups</small><b id="eInfoAnnots">0</b></div>
+     </div>
+    </div>
+   </div>
+   <div id="pComments" hidden>
+    <label class="f wide2">Reviewer <input id="cAuthor" placeholder="Engineer / Reviewer Name"></label>
+    <div class="row" style="gap:12px;margin-bottom:8px">
+     <label class="chk"><input type="checkbox" id="cHide"> Hide resolved</label>
+     <label class="chk"><input type="checkbox" id="cPage"> Current page only</label>
+    </div>
+    <div id="clist"></div>
+    <div class="tiles two"><button class="tile" id="cCsv"><i data-ic="csv"></i><span>Export CSV</span></button><button class="tile" id="cTxt"><i data-ic="textdoc"></i><span>Export Text</span></button><button class="tile wide" id="cClear"><i data-ic="trash"></i><span>Clear All Comments</span></button></div>
+   </div>
+  </aside>
+ </div>
+ <footer><span id="est">Ready</span><span id="esz"></span></footer>
+</div>
 
-            function onWindowResize() {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+<div id="view-dxf" class="view" hidden></div>
+<div id="sw-studio-host" class="view" hidden></div>
 
-            function onDocumentMouseMove(event) {
-                mouseX = (event.clientX - windowHalfX) / 100;
-                mouseY = (event.clientY - windowHalfY) / 100;
-            }
-
-            function animateGlobe() {
-                requestAnimationFrame(animateGlobe);
-                
-                globe.rotation.y += 0.0005;
-                
-                camera.position.x += (mouseX - camera.position.x) * 0.05;
-                camera.position.y += (-mouseY - camera.position.y) * 0.05;
-                camera.lookAt(scene.position);
-
-                renderer.render(scene, camera);
-            }
-            
-            initGlobe();
-            animateGlobe();
-
-            // --- UI Interactions ---
-            const countdownDate = new Date('October 8, 2025 09:00:00').getTime();
-            const updateCountdown = () => {
-                const now = new Date().getTime();
-                const distance = countdownDate - now;
-                if (distance < 0) {
-                    document.getElementById('countdown').innerHTML = `<div class="font-orbitron text-4xl font-bold text-primary">The Event is Live!</div>`;
-                    return;
-                }
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                document.getElementById('days').innerText = String(days).padStart(2, '0');
-                document.getElementById('hours').innerText = String(hours).padStart(2, '0');
-                document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
-                document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
-            };
-            setInterval(updateCountdown, 1000);
-            updateCountdown();
-
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            const toggleMenu = () => {
-                mobileMenu.classList.toggle('opacity-0');
-                mobileMenu.classList.toggle('-translate-y-full');
-            };
-            mobileMenuButton.addEventListener('click', toggleMenu);
-            document.querySelectorAll('.mobile-link').forEach(link => link.addEventListener('click', () => {
-                if (!mobileMenu.classList.contains('opacity-0')) toggleMenu();
-            }));
-
-            const header = document.getElementById('main-header');
-            window.addEventListener('scroll', () => {
-                header.classList.toggle('header-scrolled', window.scrollY > 50);
-            });
-            
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
-                });
-            });
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
-                });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-            
-            const interactiveCards = document.querySelectorAll('.interactive-card');
-            interactiveCards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left - rect.width / 2;
-                    const y = e.clientY - rect.top - rect.height / 2;
-                    const rotateX = -y / 25;
-                    const rotateY = x / 25;
-                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05) translateY(-8px)`;
-                });
-                
-                card.addEventListener('mouseleave', () => {
-                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1) translateY(0)';
-                });
-            });
-        });
-    </script>
-</body>
-</html>
-
+<div id="modal" hidden>
+ <div class="card rp-about-card" role="dialog" aria-labelledby="rp-about-heading">
+  <div class="rp-about-head">
+   <img src="build/logo.png" alt="Kensho Pro Icon" class="rp-about-logo">
+   <div class="rp-about-title">
+    <div class="rp-about-title-row">
+     <h2 id="rp-about-heading">Kensho Pro</h2>
+     <span class="rp-about-badge">Version 1.2.3</span>
+     <span class="rp-about-build">Build 2026.11 &middot; 64-Bit Desktop Workstation</span>
+    </div>
+    <p class="rp-about-sub">Engineering Drawing Compare, PDF Markup Studio, AutoCAD DXF &amp; PCB CAM / IPC Inspection Workbench</p>
+    <p class="rp-about-pub"><b>Publisher:</b> Kensho Studio &middot; <a href="https://kensho.textportdocx.in" class="rp-ext-link">textportdocx.in</a> &middot; <b>License:</b> Perpetual Commercial &amp; Personal Use (100% Offline / Zero Telemetry)</p>
+   </div>
+  </div>
+  <div class="rp-about-grid" role="table" aria-label="System Architecture and Module Specifications">
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="tabCompare"></i><span>A/B Drawing Compare</span></div>
+    <div class="rp-about-spec-val">150&ndash;600 DPI raster &amp; vector diff engine, Sub-pixel Auto-Align (dx/dy), 0.1&deg; rotation skew, 3-Point Fiducial Affine, 4-Corner Homography, Split Curtain, 4x Loupe, LCS Text/BOM Diff, and Batch Folder Compare.</div>
+   </div>
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="pcbCam"></i><span>PCB CAM &amp; IPC DFM</span></div>
+    <div class="rp-about-spec-val">Gerber RS-274X (apertures, macros, %SR step-and-repeat, G36/G37 pours), Excellon NC Drill &amp; G85 slots, IPC-D-356A Netlist Compare, IPC Class 1/2/3 DFM clearance checks, and IPC-2141 / IPC-2152 calculators.</div>
+   </div>
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="cadDxf"></i><span>AutoCAD DXF Studio</span></div>
+    <div class="rp-about-spec-val">Native R12–R2018 ASCII DXF parser, editor &amp; writer supporting LINE, LWPOLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, HATCH, TEXT/MTEXT, DIMENSION, BLOCK/INSERT, Layer Manager, and Tolerance-Exact Vector Diff.</div>
+   </div>
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="ruler"></i><span>Metrology &amp; OSNAP</span></div>
+    <div class="rp-about-spec-val">Calibrated IPC English (mil/in) &amp; Metric (mm/&mu;m) scales, 8px Magnetic OSNAP (endpoint, midpoint, center, intersection), Distance, Polyline, Shoelace Area, 3-Pt Angle/Circle, AS9102 FAI, and ASME Y14.5 GD&amp;T.</div>
+   </div>
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="pdfStudio"></i><span>PDF Markup Studio</span></div>
+    <div class="rp-about-spec-val">Direct in-place PDF text editing, 45+ engineering/global/Indic fonts + custom .TTF/.OTF loader, Editable Tables, Equation Studio, Revision Clouds, Leader Callouts, SHA-256 Stamps, True Redaction &amp; Page Assembly.</div>
+   </div>
+   <div class="rp-about-item" role="row">
+    <div class="rp-about-spec-key"><i data-ic="report"></i><span>Audit, Sessions &amp; i18n</span></div>
+    <div class="rp-about-spec-val">Executive Audit PDF reports with QA sign-off blocks, CSV defect &amp; BOM schedules, 1-Click QA Handover (.zip), portable .redline session snapshots, and 46-language interface localization (32 International + 14 Indian).</div>
+   </div>
+  </div>
+  <div class="rp-about-specs">
+   <div><b>Supported Formats</b><span>PDF (1.4&ndash;2.0) &middot; AutoCAD DXF (R12/R2000/R2018) &middot; Gerber RS-274X (.gbr/.gtl/.gbl/.gko/.gts/.gbs) &middot; Excellon (.drl/.xln/.txt) &middot; IPC-D-356 (.ipc/.net) &middot; Session (.redline)</span></div>
+   <div><b>Runtime Architecture</b><span>PDF.js + PDF-Lib Vector Core &middot; 8-Connected Web Worker Diff &middot; 512&times;512 Tile LRU Arena &middot; 100% Local Air-Gapped Execution</span></div>
+  </div>
+  <div class="rp-about-footer">
+   <div class="rp-about-actions">
+    <button type="button" id="about-guide-btn" class="rp-about-btn" title="Open Complete User Manual &amp; Option Reference (Shift+F1)"><i data-ic="book"></i><span>Quick Guide</span></button>
+    <button type="button" id="about-shortcuts-btn" class="rp-about-btn" hidden style="display:none !important"><i data-ic="keyboard"></i><span>Shortcuts</span></button>
+    <button type="button" id="about-license-btn" class="rp-about-btn" title="View Software License &amp; Offline Privacy Guarantee"><i data-ic="shield"></i><span>License &amp; EULA</span></button>
+    <button type="button" id="about-updates-btn" class="rp-about-btn" title="Check for Kensho Pro updates"><i data-ic="zap"></i><span>Check Updates</span></button>
+    <button type="button" id="about-website-btn" class="rp-about-btn" title="Open https://kensho.textportdocx.in in your browser"><i data-ic="globe"></i><span>Website</span></button>
+    <button type="button" id="about-copy-btn" class="rp-about-btn" title="Copy version and system diagnostics to clipboard"><i data-ic="copy"></i><span id="about-copy-lbl">Copy Diagnostics</span></button>
+   </div>
+   <button type="button" id="close" class="rp-about-close">Close</button>
+  </div>
+ </div>
+</div>
+<div id="dlg" hidden><form class="card dl" id="dF"><h2 id="dT"></h2><div id="dB"></div><div class="row"><button type="button" id="dC">Cancel</button><button type="submit" id="dO">OK</button></div></form></div>
+<div id="selbar" hidden><button id="sbAddOrder" title="Add selected word/text to Ordered Multi-Select List (1→2→3→4)"><i data-ic="listOl"></i>+Select in Order</button><button id="sbCopy" title="Copy the selected text"><i data-ic="copy"></i>Copy</button><button id="sbHl"><i data-ic="highlight"></i>Highlight</button><button id="sbUl"><i data-ic="underline"></i>Underline</button><button id="sbSt"><i data-ic="strike"></i>Strikeout</button><button id="sbEd"><i data-ic="edittext"></i>Edit text</button></div>
+<div id="rp-drop-backdrop" class="rp-drop-backdrop" hidden>
+ <div class="rp-drop-container">
+  <div class="rp-drop-header">
+   <i data-ic="open"></i>
+   <h3>Drop Engineering Drawings, PCB CAM Layers, AutoCAD DXF, or PDFs</h3>
+   <p>Drop onto a specific target zone below, or drop 2 files anywhere to compare A vs B automatically</p>
+  </div>
+  <div class="rp-drop-zones">
+   <div class="rp-drop-zone zone-a" data-dropzone="A">
+    <i data-ic="openA"></i>
+    <b>Drop Slot A (Base Drawing)</b>
+    <span>Original PDF, Gerber RS-274X, Excellon Drill, or AutoCAD DXF</span>
+   </div>
+   <div class="rp-drop-zone zone-b" data-dropzone="B">
+    <i data-ic="openB"></i>
+    <b>Drop Slot B (Revised Drawing / CAM Layer)</b>
+    <span>Revised PDF, Gerber RS-274X, Excellon Drill, or AutoCAD DXF</span>
+   </div>
+   <div class="rp-drop-zone zone-edit" data-dropzone="edit">
+    <i data-ic="pdfStudio"></i>
+    <b>Or drop anywhere to open directly in PDF Studio</b>
+    <span>Markup, Measurement, E-Sign, Typography, Page Assembly &amp; Redaction</span>
+   </div>
+  </div>
+ </div>
+</div>
+<div id="printarea"></div>
+<script src="icons.js"></script><script src="lib/pdf.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script><script src="lib/pdf-lib.min.js"></script><script src="pre.js"></script><script src="dxf_compare_core.js"></script><script src="dxf_engine.js"></script><script src="cam_engine.js"></script><script src="measure_engine.js"></script><script src="worker_engine.js"></script><script src="ui_i18n_catalog.js"></script><script src="ui_ribbon.js"></script><script src="dxf_studio_tools.js"></script><script src="dxf_studio.js"></script><script src="cad3d_engine.js"></script><script src="cad_kernel.js"></script><script src="solidworks_studio.js"></script><script src="compare_memory_guard.js"></script><script src="app.js"></script><script src="editor.js"></script><script src="menu.js"></script><script src="extras.js"></script><script src="pro.js"></script>
+</body></html>

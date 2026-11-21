@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-kensho">
+    <comment>Kensho Pro Review Session</comment>
+    <glob pattern="*.kensho"/>
+    <glob pattern="*.redline"/>
+  </mime-type>
+  <mime-type type="application/x-redline">
+    <comment>Kensho Pro Review Session</comment>
+    <glob pattern="*.redline"/>
+  </mime-type>
+  <mime-type type="image/vnd.dxf">
+    <comment>AutoCAD DXF Drawing</comment>
+    <glob pattern="*.dxf"/>
+  </mime-type>
+  <mime-type type="application/vnd.gerber">
+    <comment>PCB Gerber RS-274X Layer</comment>
+    <glob pattern="*.gbr"/>
+    <glob pattern="*.ger"/>
+    <glob pattern="*.gtl"/>
+    <glob pattern="*.gbl"/>
+    <glob pattern="*.gts"/>
+    <glob pattern="*.gbs"/>
+    <glob pattern="*.gto"/>
+    <glob pattern="*.gbo"/>
+    <glob pattern="*.gtp"/>
+    <glob pattern="*.gbp"/>
+    <glob pattern="*.gko"/>
+    <glob pattern="*.gm1"/>
+  </mime-type>
+  <mime-type type="application/x-excellon">
+    <comment>Excellon NC Drill File</comment>
+    <glob pattern="*.drl"/>
+    <glob pattern="*.xln"/>
+  </mime-type>
+  <mime-type type="application/x-ipc-d356">
+    <comment>IPC-D-356 Bare-Board Test Netlist</comment>
+    <glob pattern="*.ipc"/>
+    <glob pattern="*.d356"/>
+  </mime-type>
+</mime-info>
