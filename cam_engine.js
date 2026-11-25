@@ -888,6 +888,25 @@
         if (opCode === '1') {
           this._updateBounds(xVal, yVal, apSize / 2);
           this._updateBounds(currentX, currentY, apSize / 2);
+          if ((currentInterpolation === 'G02' || currentInterpolation === 'G03') && (Math.abs(iVal) > 1e-9 || Math.abs(jVal) > 1e-9)) {
+            const arcInfo = resolveGerberArc(currentX, currentY, xVal, yVal, iVal, jVal, currentInterpolation, quadrantMode);
+            if (arcInfo && arcInfo.rad > 0) {
+              const padR = arcInfo.rad + apSize / 2;
+              if (arcInfo.isFullCircle) {
+                this._updateBounds(arcInfo.cx - padR, arcInfo.cy - padR, 0);
+                this._updateBounds(arcInfo.cx + padR, arcInfo.cy + padR, 0);
+              } else {
+                const steps = 16;
+                const dAng = arcInfo.ccw
+                  ? (((arcInfo.endAng - arcInfo.startAng) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) || Math.PI * 2)
+                  : -(((arcInfo.startAng - arcInfo.endAng) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) || Math.PI * 2);
+                for (let s = 1; s < steps; s++) {
+                  const ang = arcInfo.startAng + (dAng * s) / steps;
+                  this._updateBounds(arcInfo.cx + Math.cos(ang) * arcInfo.rad, arcInfo.cy + Math.sin(ang) * arcInfo.rad, apSize / 2);
+                }
+              }
+            }
+          }
           if (ap.draws != null) ap.draws++;
 
           emitCommand({
@@ -1127,10 +1146,14 @@
           const m1Y = /Y([+-]?[0-9.]+)/.exec(parts[0]);
           const m2X = /X([+-]?[0-9.]+)/.exec(parts[1]);
           const m2Y = /Y([+-]?[0-9.]+)/.exec(parts[1]);
-          const x1 = m1X ? this._parseExcellonNumber(m1X[1], isMetric) : lastX;
-          const y1 = m1Y ? this._parseExcellonNumber(m1Y[1], isMetric) : lastY;
-          const x2 = m2X ? this._parseExcellonNumber(m2X[1], isMetric) : x1;
-          const y2 = m2Y ? this._parseExcellonNumber(m2Y[1], isMetric) : y1;
+          const rawX1 = m1X ? this._parseExcellonNumber(m1X[1], isMetric) : null;
+          const rawY1 = m1Y ? this._parseExcellonNumber(m1Y[1], isMetric) : null;
+          const x1 = rawX1 != null ? (isIncremental ? lastX + rawX1 : rawX1) : lastX;
+          const y1 = rawY1 != null ? (isIncremental ? lastY + rawY1 : rawY1) : lastY;
+          const rawX2 = m2X ? this._parseExcellonNumber(m2X[1], isMetric) : null;
+          const rawY2 = m2Y ? this._parseExcellonNumber(m2Y[1], isMetric) : null;
+          const x2 = rawX2 != null ? (isIncremental ? x1 + rawX2 : rawX2) : x1;
+          const y2 = rawY2 != null ? (isIncremental ? y1 + rawY2 : rawY2) : y1;
           const dia = this.tools.get(currentTool) || (isMetric ? 0.8 : 0.032);
           const rad = dia / 2;
 
@@ -1268,7 +1291,7 @@
         }
 
         // Test Record: starts with 3-digit operation code (317 = thru-hole, 327 = SMT, 307 = blind/buried, 367 = tooling)
-        const opMatch = /^([0-9]{3})\s/.exec(line);
+        const opMatch = /^(307|317|327|367)/.exec(line);
         if (!opMatch) continue;
 
         const opCode = opMatch[1];
@@ -1284,9 +1307,9 @@
 
         // Extract fields from remainder of record (columns 32+)
         const tail = line.slice(32);
-        const holeMatch = /([DU])(\d+)/.exec(tail);
+        const holeMatch = /([DU])\s*(\d+)\s*([PU])?/i.exec(tail);
         const accessMatch = /A(\d\d)/.exec(tail);
-        const coordMatch = /X([+-]?\d+)Y([+-]?\d+)/.exec(tail);
+        const coordMatch = /X\s*([+-]?\s*\d+)\s*Y\s*([+-]?\s*\d+)/.exec(tail);
 
         // IPC-D-356 coordinate scaling:
         // CUST 0 (Mils): X/Y coords are in 0.1 mil (1/10000 inch), hole/pad sizes in 0.1 mil or 1 mil
@@ -2018,9 +2041,9 @@
                 const centerDistMils = Math.hypot(fx - cx, fy - cy) * 1000;
                 const edgeToCenterMils = centerDistMils - pdHalfMils;
                 if (edgeToCenterMils > minClrMils + trRadMils + 2) continue;
-                const edgeToEdgeMils = Math.max(0.1, edgeToCenterMils - trRadMils);
-                const effectiveClrMils = edgeToCenterMils > 0 ? Math.min(edgeToCenterMils, edgeToEdgeMils + trRadMils) : edgeToEdgeMils;
-                if (effectiveClrMils > 0 && effectiveClrMils < minClrMils - 0.05) {
+                const edgeToEdgeMils = edgeToCenterMils - trRadMils;
+                const effectiveClrMils = Math.max(0, edgeToEdgeMils);
+                if (edgeToEdgeMils < minClrMils - 0.05) {
                   const pairKey = `${dIdx}:${Math.round(fx * 1000)},${Math.round(fy * 1000)}`;
                   if (seenClrPairs.has(pairKey)) continue;
                   seenClrPairs.add(pairKey);
@@ -2630,8 +2653,11 @@
 
       const minClearanceMils = options.minClearanceMils || 4.0;
       const compareTolMils = options.compareTolMils != null ? options.compareTolMils : 0;
-      const bwInches = (sharedBoundsInches.maxX - sharedBoundsInches.minX) || 1.0;
-      const pxPerMil = (w / (bwInches * 1000));
+      const bwInches = Math.max(1e-4, (sharedBoundsInches.maxX - sharedBoundsInches.minX) || 1.0);
+      const bhInches = Math.max(1e-4, (sharedBoundsInches.maxY - sharedBoundsInches.minY) || 1.0);
+      const pad = 30;
+      const scalePxPerIn = Math.min(Math.max(1, w - pad * 2) / bwInches, Math.max(1, h - pad * 2) / bhInches);
+      const pxPerMil = scalePxPerIn / 1000;
       const clearanceRadiusPx = Math.max(2, Math.round(minClearanceMils * pxPerMil));
       const tolRadiusPx = compareTolMils > 0 ? Math.min(4, Math.floor(compareTolMils * pxPerMil)) : 0;
 
@@ -3278,30 +3304,67 @@
               const isRot90 = Math.abs((flashRotDeg % 180) - 90) < 1.0;
               const effP0In = isRot90 ? p1In : p0In;
               const effP1In = isRot90 ? p0In : p1In;
-              if (!ap || ap.type === 'C' || ap.type === 'P') {
+              if (!ap || ap.type === 'C') {
                 const rad = Math.max(0.18, (p0In / 2) * scale);
                 if (renderMode === 'outline' || renderMode === 'skeleton') {
                   page.drawCircle({ x: cx, y: cy, size: rad, borderColor: pCol, borderWidth: 0.35 });
                 } else {
                   page.drawCircle({ x: cx, y: cy, size: rad, color: pCol });
                 }
-              } else if (ap.type === 'O' && renderMode === 'fill' && roundCap !== undefined) {
-                const w = Math.max(0.35, effP0In * scale);
-                const h = Math.max(0.35, effP1In * scale);
-                if (w >= h) {
-                  const dx = (w - h) / 2;
-                  page.drawLine({ start: { x: cx - dx, y: cy }, end: { x: cx + dx, y: cy }, thickness: h, color: pCol, lineCap: roundCap });
+              } else if (ap.type === 'P') {
+                const rad = Math.max(0.2, (p0In / 2) * scale);
+                const sides = Math.max(3, Math.min(24, Math.round((ap.params && ap.params[1]) || 6)));
+                const baseRot = ((flashRotDeg + ((ap.params && ap.params[2]) || 0)) * Math.PI) / 180;
+                const polyPts = [];
+                for (let si = 0; si < sides; si++) {
+                  const ang = baseRot + (si * 2 * Math.PI) / sides;
+                  polyPts.push([cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)]);
+                }
+                const svgD = polyPts.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt[0].toFixed(3)} ${(pageH - pt[1]).toFixed(3)}`).join(' ') + ' Z';
+                if (typeof page.drawSvgPath === 'function') {
+                  if (renderMode === 'outline' || renderMode === 'skeleton') {
+                    page.drawSvgPath(svgD, { x: 0, y: pageH, borderColor: pCol, borderWidth: 0.35 });
+                  } else {
+                    page.drawSvgPath(svgD, { x: 0, y: pageH, color: pCol });
+                  }
                 } else {
-                  const dy = (h - w) / 2;
-                  page.drawLine({ start: { x: cx, y: cy - dy }, end: { x: cx, y: cy + dy }, thickness: w, color: pCol, lineCap: roundCap });
+                  page.drawCircle({ x: cx, y: cy, size: rad, color: pCol });
+                }
+              } else if (ap.type === 'O' && renderMode === 'fill' && roundCap !== undefined) {
+                const rawW = Math.max(0.35, p0In * scale);
+                const rawH = Math.max(0.35, p1In * scale);
+                const rotRad = (flashRotDeg * Math.PI) / 180;
+                const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+                if (rawW >= rawH) {
+                  const dx = (rawW - rawH) / 2;
+                  page.drawLine({ start: { x: cx - dx * cosR, y: cy - dx * sinR }, end: { x: cx + dx * cosR, y: cy + dx * sinR }, thickness: rawH, color: pCol, lineCap: roundCap });
+                } else {
+                  const dy = (rawH - rawW) / 2;
+                  page.drawLine({ start: { x: cx + dy * sinR, y: cy - dy * cosR }, end: { x: cx - dy * sinR, y: cy + dy * cosR }, thickness: rawW, color: pCol, lineCap: roundCap });
                 }
               } else {
-                const w = Math.max(0.35, effP0In * scale);
-                const h = Math.max(0.35, effP1In * scale);
-                if (renderMode === 'outline' || renderMode === 'skeleton') {
-                  page.drawRectangle({ x: cx - w / 2, y: cy - h / 2, width: w, height: h, borderColor: pCol, borderWidth: 0.35 });
+                const rawW = Math.max(0.35, p0In * scale);
+                const rawH = Math.max(0.35, p1In * scale);
+                const isAxisAligned = Math.abs(flashRotDeg % 90) < 0.5;
+                if (isAxisAligned || !pdfLibRef.degrees) {
+                  const w = Math.max(0.35, effP0In * scale);
+                  const h = Math.max(0.35, effP1In * scale);
+                  if (renderMode === 'outline' || renderMode === 'skeleton') {
+                    page.drawRectangle({ x: cx - w / 2, y: cy - h / 2, width: w, height: h, borderColor: pCol, borderWidth: 0.35 });
+                  } else {
+                    page.drawRectangle({ x: cx - w / 2, y: cy - h / 2, width: w, height: h, color: pCol });
+                  }
                 } else {
-                  page.drawRectangle({ x: cx - w / 2, y: cy - h / 2, width: w, height: h, color: pCol });
+                  const rotRad = (flashRotDeg * Math.PI) / 180;
+                  const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+                  const hw = rawW / 2, hh = rawH / 2;
+                  const rx = cx - hw * cosR + hh * sinR;
+                  const ry = cy - hw * sinR - hh * cosR;
+                  if (renderMode === 'outline' || renderMode === 'skeleton') {
+                    page.drawRectangle({ x: rx, y: ry, width: rawW, height: rawH, rotate: pdfLibRef.degrees(flashRotDeg), borderColor: pCol, borderWidth: 0.35 });
+                  } else {
+                    page.drawRectangle({ x: rx, y: ry, width: rawW, height: rawH, rotate: pdfLibRef.degrees(flashRotDeg), color: pCol });
+                  }
                 }
               }
             }
@@ -3316,7 +3379,7 @@
               const x1 = txIn(drl.toInches(s.x1), mirror), y1 = tyIn(drl.toInches(s.y1));
               const x2 = txIn(drl.toInches(s.x2), mirror), y2 = tyIn(drl.toInches(s.y2));
               const w = Math.max(1.5, drl.toInches(s.diameter) * scale);
-              page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: ringCol });
+              page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: w, color: ringCol, ...(roundCap !== undefined ? { lineCap: roundCap } : {}) });
             }
           }
           if (Array.isArray(drl.hits)) {

@@ -902,23 +902,26 @@
       }
       container.innerHTML = filtered.map(({ d, i }) => {
         const unitReadout = CAMState.formatBoxFromPx(d.w, d.h, d.x, d.y, d.dpi || 300);
+        const escHtml = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;');
         const isTouched = (i === this.touchedIndex);
         const detSummary = d.dxfSummary || d.note || d.autoSummary || '';
+        const safeStatus = ['Open', 'Approved', 'Flagged', 'Ignored'].includes(d.status) ? d.status : 'Open';
+        const safeType = ['removed', 'added', 'changed'].includes(d.type) ? d.type : 'changed';
         return `
-        <div class="defect-item ${i === this.currentIndex ? 'active' : ''} ${isTouched ? 'note-open' : ''} status-${d.status.toLowerCase()}" data-idx="${i}">
+        <div class="defect-item ${i === this.currentIndex ? 'active' : ''} ${isTouched ? 'note-open' : ''} status-${safeStatus.toLowerCase()}" data-idx="${i}">
           <div class="defect-header">
-            <span class="defect-badge ${d.type}">#${d.id} ${d.type === 'removed' ? 'REV A (OLD)' : d.type === 'added' ? 'REV B (NEW)' : 'REV A → REV B'}</span>
-            <span class="defect-coords" title="Touch to view difference note · Pixel Coords: (${Math.round(d.x)}, ${Math.round(d.y)})">${unitReadout}</span>
+            <span class="defect-badge ${safeType}">#${escHtml(d.id)} ${safeType === 'removed' ? 'REV A (OLD)' : safeType === 'added' ? 'REV B (NEW)' : 'REV A → REV B'}</span>
+            <span class="defect-coords" title="Touch to view difference note · Pixel Coords: (${Math.round(d.x)}, ${Math.round(d.y)})">${escHtml(unitReadout)}</span>
             <select class="defect-status-sel" data-idx="${i}">
-              <option value="Open" ${d.status === 'Open' ? 'selected' : ''}>[Open]</option>
-              <option value="Approved" ${d.status === 'Approved' ? 'selected' : ''}>[Approved]</option>
-              <option value="Flagged" ${d.status === 'Flagged' ? 'selected' : ''}>[Flagged]</option>
-              <option value="Ignored" ${d.status === 'Ignored' ? 'selected' : ''}>[Ignored]</option>
+              <option value="Open" ${safeStatus === 'Open' ? 'selected' : ''}>[Open]</option>
+              <option value="Approved" ${safeStatus === 'Approved' ? 'selected' : ''}>[Approved]</option>
+              <option value="Flagged" ${safeStatus === 'Flagged' ? 'selected' : ''}>[Flagged]</option>
+              <option value="Ignored" ${safeStatus === 'Ignored' ? 'selected' : ''}>[Ignored]</option>
             </select>
           </div>
           <div class="defect-note-wrap" ${isTouched ? '' : 'hidden'}>
-            ${detSummary ? `<div class="defect-note-summary">${String(detSummary).replace(/</g, '&lt;')}</div>` : ''}
-            <input type="text" class="defect-note-input" data-idx="${i}" placeholder="Add engineering / CAM review note..." value="${(d.note || '').replace(/"/g, '&quot;')}" />
+            ${detSummary ? `<div class="defect-note-summary">${escHtml(detSummary)}</div>` : ''}
+            <input type="text" class="defect-note-input" data-idx="${i}" placeholder="Add engineering / CAM review note..." value="${escHtml(d.note || '')}" />
           </div>
         </div>
       `;
@@ -1375,6 +1378,9 @@
 
     curtain.hidden = false;
     curtain.style.left = `${curtainPct}%`;
+    if (S && S.cur && S.cur.isNativeDXF && typeof window.rpSharpen === 'function') {
+      window.rpSharpen();
+    }
 
     if (S && S.cur && cvA) {
       const curKey = `${S.showTok || 0}_${S.gen || 0}_${S.cur.n || 1}_${S.cur.W}x${S.cur.H}_${S.degA || 0}_${S.rotA || 0}_${S.mirrorXA ? 1 : 0}_${S.mirrorYA ? 1 : 0}_${cv._paintGen || 0}`;
@@ -1403,7 +1409,10 @@
       if (hq.style.display === 'block' && hq._cropA && hq._cropB) {
         const W = hq.width, H = hq.height;
         const x = hq.getContext('2d');
-        const splitPx = Math.max(0, Math.min(W, Math.round((curtainPct / 100) * W)));
+        const vpW = (vp && vp.clientWidth) ? vp.clientWidth : (W || 1);
+        const hqD = hq._lastDpr || (W / vpW) || 1;
+        const panDeltaX = (S && S.view && Number.isFinite(hq._lastVx)) ? (S.view.x - hq._lastVx) : 0;
+        const splitPx = Math.max(0, Math.min(W, Math.round(((curtainPct / 100) * vpW - panDeltaX) * hqD)));
         if (splitPx > 0) {
           x.putImageData(hq._cropA, 0, 0, 0, 0, splitPx, H);
         }
@@ -1534,7 +1543,8 @@
     const RM = (typeof window !== 'undefined' && window.RP_MEASURE) ? window.RP_MEASURE : {};
     const sessionData = {
       app: 'Kensho Pro',
-      version: '1.2.3',
+      version: '1.2.3.2',
+      buildVersion: 'O1R0A7N5G0E002026A1232',
       timestamp: new Date().toISOString(),
       files: {
         A: S.names ? S.names.A : 'A.pdf',
@@ -7001,7 +7011,7 @@
       { id: 'exp_report', scope: 'compare', defaultKey: 'alt+shift+e', secondaryKeys: ['ctrl+shift+e'], keys: ['Alt+Shift+E'], desc: 'Export Comparison Report (PDF)', run: () => window.ACT && window.ACT.report && window.ACT.report() },
       { id: 'exp_exec_audit', scope: 'compare', defaultKey: 'ctrl+alt+a', keys: ['Ctrl+Alt+A'], desc: 'Generate Executive Audit Report (PDF)', run: () => generateExecutiveAuditReport(false) },
       { id: 'exp_qa_zip', scope: 'compare', defaultKey: 'alt+shift+q', secondaryKeys: ['ctrl+shift+q'], keys: ['Alt+Shift+Q'], desc: 'Export 1-Click QA Handover Package (.zip)', run: () => exportQAPackageZip() },
-      { id: 'cmd_palette', scope: 'all', defaultKey: 'alt+k', secondaryKeys: ['ctrl+k'], keys: ['Alt+K'], desc: 'Open Fuzzy Command Palette & Memory Manager', run: () => openCommandPaletteModal() },
+      { id: 'cmd_palette', scope: 'all', defaultKey: 'alt+k', keys: ['Alt+K'], desc: 'Open Fuzzy Command Palette & Memory Manager', run: () => (window.KenshoUI && typeof window.KenshoUI.openCommandPalette === 'function') ? window.KenshoUI.openCommandPalette('') : openCommandPaletteModal() },
       { id: 'smart_purge', scope: 'all', defaultKey: 'alt+shift+m', secondaryKeys: ['ctrl+shift+m'], keys: ['Alt+Shift+M'], desc: 'Smart Memory Purge (Evict Unpinned Pages & Slabs)', run: () => SmartManager.smartPurgeMemory() },
       { id: 'triage_noise', scope: 'compare', defaultKey: 'alt+shift+t', secondaryKeys: ['ctrl+shift+t'], keys: ['Alt+Shift+T'], desc: 'Auto-Triage: Dismiss Cosmetic Noise Defects', run: () => SmartManager.autoDismissCosmeticNoise() },
       { id: 'create_checkpoint', scope: 'compare', defaultKey: 'ctrl+alt+s', keys: ['Ctrl+Alt+S'], desc: 'Create Instant Workspace Checkpoint Snapshot', run: () => { const id = SmartManager.createCheckpoint('Manual Checkpoint'); rpToast('Saved Workspace Checkpoint #' + id); } },
@@ -7013,7 +7023,7 @@
       { id: 'app_open_pdf_studio', scope: 'all', defaultKey: 'ctrl+alt+o', keys: ['Ctrl+Alt+O'], desc: 'Open PDF Document Directly in PDF Studio', run: () => { if (typeof window.setView === 'function') window.setView('edit'); if (window.ACT && window.ACT.eOpen) window.ACT.eOpen(); } },
       { id: 'app_open_dxf_studio', scope: 'all', defaultKey: 'ctrl+alt+d', keys: ['Ctrl+Alt+D'], desc: 'Open AutoCAD DXF Directly in DXF Studio', run: () => { if (typeof window.setView === 'function') window.setView('dxf'); if ($('#dxf-st-open')) $('#dxf-st-open').click(); } },
       { id: 'app_quick_guide', scope: 'all', defaultKey: 'alt+shift+f1', secondaryKeys: ['shift+f1'], keys: ['Alt+Shift+F1'], desc: 'Open Quick Guide & Complete Option Reference Manual', run: () => { if (window.showQuickGuideModal) window.showQuickGuideModal('all'); } },
-      { id: 'app_focus_lang', scope: 'all', defaultKey: 'alt+l', keys: ['Alt+L'], desc: 'Focus Workspace Language Selector (46 Languages)', run: () => { const sel = $('#rp-lang-sel'); if (sel) sel.focus(); } },
+      { id: 'app_focus_lang', scope: 'all', defaultKey: 'ctrl+alt+l', keys: ['Ctrl+Alt+L'], desc: 'Open Workspace Language Settings (46 Languages)', run: () => { if (typeof openWorkstationSettingsModal === 'function') openWorkstationSettingsModal('language'); else { const sel = $('#rp-lang-sel'); if (sel) sel.focus(); } } },
       { id: 'ed_merge_pdfs', scope: 'edit', defaultKey: 'ctrl+alt+m', keys: ['Ctrl+Alt+M'], desc: 'PDF Studio: Merge Multiple PDFs', run: () => window.ACT && window.ACT.op && window.ACT.op('merge') },
       { id: 'ed_split_pdf', scope: 'edit', defaultKey: 'ctrl+alt+s', keys: ['Ctrl+Alt+S'], desc: 'PDF Studio: Split PDF Document', run: () => window.ACT && window.ACT.op && window.ACT.op('split') },
       { id: 'ed_crop_pages', scope: 'edit', defaultKey: 'ctrl+alt+c', keys: ['Ctrl+Alt+C'], desc: 'PDF Studio: Crop Page Margins', run: () => window.ACT && window.ACT.op && window.ACT.op('crop') },
@@ -7332,7 +7342,7 @@
           </div>
         </div>
         <div class="rp-hud-footer">
-          <span>Kensho Pro 1.2.3 &middot; Page Nav: <b>Left / Right</b> or <b>PgUp / PgDn</b> &middot; Defect Nav: <b>P / N</b></span>
+          <span>Kensho Pro 1.2.3.2 (Build O1R0A7N5G0E002026A1232) &middot; Page Nav: <b>Left / Right</b> or <b>PgUp / PgDn</b> &middot; Defect Nav: <b>P / N</b></span>
           <span>Press <b>Esc</b> or click <b>Close</b> to dismiss</span>
         </div>
       </div>
@@ -7639,6 +7649,10 @@
         if (dxfWb && !dxfWb.hidden) { dxfWb.hidden = true; e.preventDefault(); return; }
         const bomMod = $('#rp-bom-modal');
         if (bomMod && !bomMod.hidden) { bomMod.hidden = true; e.preventDefault(); return; }
+        for (const extraId of ['rp-net-tracer-modal', 'rp-pcb-calc-modal', 'rp-bom-meas-modal', 'rp-command-palette-modal', 'rp-update-prompt-modal']) {
+          const em = document.getElementById(extraId);
+          if (em && !em.hidden) { em.remove(); e.preventDefault(); return; }
+        }
         const fidMod = $('#fiducial-modal');
         if (fidMod && !fidMod.hidden) {
           fidMod.hidden = true;
@@ -7692,7 +7706,9 @@
 
       // Execute any matching action from ShortcutManager (including user-customized shortcuts and Next/Prev Page!)
       const normKey = ShortcutManager.eventToKeyStr(e);
-      const viewScope = document.body.dataset.view === 'edit' ? 'edit' : (document.body.dataset.view === 'dxf' ? 'dxf' : 'compare');
+      const _swHostEl = document.getElementById('sw-studio-host');
+      const _isSwActive = document.body.dataset.view === 'solidworks' || !!(_swHostEl && !_swHostEl.hidden);
+      const viewScope = _isSwActive ? 'solidworks' : (document.body.dataset.view === 'edit' ? 'edit' : (document.body.dataset.view === 'dxf' ? 'dxf' : 'compare'));
       const matchedAction = ShortcutManager.findMatchingAction(normKey, viewScope);
       if (matchedAction && typeof matchedAction.run === 'function') {
         e.preventDefault();
@@ -8359,7 +8375,7 @@
   const _snapshottedTextNodes = [];
   function captureOriginalEnglishDOM() {
     if (_domEnglishSnapshotted || typeof document === 'undefined') return;
-    const roots = ['#top', '#view-compare', '#view-edit', '#view-dxf', '#modal'];
+    const roots = ['#top', '#view-compare', '#view-edit', '#view-dxf', '#sw-studio-host', '#kp-statusbar', '#modal'];
     roots.forEach(sel => {
       const rootEl = document.querySelector(sel);
       if (!rootEl) return;
@@ -8939,6 +8955,7 @@
       const targetFont = fontMap[lang];
       if (targetFont && [...fontSel.options].some(o => o.value === targetFont)) {
         fontSel.value = targetFont;
+        fontSel.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
 
@@ -9866,11 +9883,22 @@
       });
       window.addEventListener('pointerup', () => { mmDrag = false; });
 
+      let _mmRaf = 0;
+      const scheduleMinimap = () => {
+        if (document.hidden || document.body.dataset.view !== 'compare') return;
+        const mmEl = $('#kdock-minimap');
+        if (!mmEl || mmEl.hidden || mmEl.classList.contains('user-hidden')) return;
+        if (_mmRaf) return;
+        _mmRaf = requestAnimationFrame(() => {
+          _mmRaf = 0;
+          this.renderWorldViewMinimap();
+        });
+      };
       const stg = $('#stage');
       if (stg && typeof MutationObserver !== 'undefined') {
-        new MutationObserver(() => this.renderWorldViewMinimap()).observe(stg, { attributes: true, attributeFilter: ['style'] });
+        new MutationObserver(scheduleMinimap).observe(stg, { attributes: true, attributeFilter: ['style'] });
       }
-      setInterval(() => this.renderWorldViewMinimap(), 600);
+      setInterval(scheduleMinimap, 1500);
 
       window.isWorldViewActive = () => {
         const elMm = $('#kdock-minimap');
@@ -12331,6 +12359,7 @@
     setCurtainMode,
     setCompareMode,
     isCurtainActive: () => curtainActive,
+    getCurtainRatio: () => Math.max(0.02, Math.min(0.98, curtainPct / 100)),
     getCurtainPct: () => curtainPct,
     updateCurtainClip,
     showBOMAndMeasurementsModal,

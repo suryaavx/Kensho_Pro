@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kensho Pro v1.2.3</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+<title>Kensho Pro v1.2.3.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
   html, body {
@@ -11,127 +12,287 @@
     height: 100%;
     overflow: hidden;
     background: transparent;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", Roboto, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .splash-card {
-    position: relative;
-    width: 496px;
-    height: 296px;
-    border-radius: 18px;
-    background: radial-gradient(circle at 22% 18%, rgba(0, 240, 255, 0.14), transparent 52%),
-                radial-gradient(circle at 82% 86%, rgba(255, 42, 75, 0.12), transparent 54%),
-                linear-gradient(155deg, #0d131c 0%, #090d14 100%);
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    width: 456px;
+    height: 316px;
+    background: radial-gradient(120% 100% at 50% 0%, #171e2b 0%, #0f131a 60%, #0b0e14 100%);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    box-shadow:
+      0 24px 56px rgba(0, 0, 0, 0.68),
+      0 0 0 1px rgba(59, 130, 246, 0.08) inset;
+    padding: 28px 32px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 28px 34px 24px;
-    color: #f8fafc;
+    justify-content: space-between;
+    position: relative;
     overflow: hidden;
+    color: #f1f5f9;
   }
-  .splash-logo-wrap {
-    width: 92px;
-    height: 92px;
-    border-radius: 20px;
-    background: rgba(15, 23, 42, 0.72);
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42), 0 0 24px rgba(0, 240, 255, 0.12);
+  .splash-card::before {
+    content: "";
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(56, 189, 248, 0.04) 55%, transparent 75%);
+    pointer-events: none;
+  }
+  .brand-head {
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-    animation: logoFloat 2.8s ease-in-out infinite;
+    gap: 13px;
+    z-index: 1;
   }
-  .splash-logo {
-    width: 74px;
-    height: 74px;
+  .brand-logo {
+    width: 44px;
+    height: 44px;
     object-fit: contain;
     display: block;
+    filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.25));
   }
-  .splash-title-row {
+  .brand-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
+    flex-direction: column;
+    gap: 2px;
   }
-  .splash-title {
-    font-size: 26px;
+  .brand-name {
+    font-size: 21px;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: #f8fafc;
+    line-height: 1.1;
   }
-  .splash-version {
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 3px 9px;
-    border-radius: 999px;
-    color: #00f0ff;
-    background: rgba(0, 240, 255, 0.12);
-    border: 1px solid rgba(0, 240, 255, 0.34);
+  .brand-ver {
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: #7c8aa0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
-  .splash-sub {
-    font-size: 12.5px;
-    color: #94a3b8;
-    letter-spacing: 0.02em;
-    margin-bottom: 22px;
-    text-align: center;
-  }
-  .splash-bar-track {
-    width: 100%;
-    max-width: 320px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.16);
-    overflow: hidden;
-    margin-bottom: 11px;
-  }
-  .splash-bar-fill {
-    width: 42%;
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #ff2a4b 0%, #00f0ff 100%);
-    animation: splashSlide 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  }
-  .splash-footer {
-    width: 100%;
+  .orb-stage {
+    position: relative;
+    width: 92px;
+    height: 92px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+  .orb-halo {
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(56, 189, 248, 0.14);
+    border-top-color: rgba(96, 165, 250, 0.72);
+    border-right-color: rgba(56, 189, 248, 0.35);
+    animation: orbSpin 2.6s linear infinite;
+    pointer-events: none;
+  }
+  .orb-glow {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 72%);
+    animation: orbPulse 2.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  #splash-orb {
+    width: 72px;
+    height: 72px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .load-footer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    z-index: 1;
+  }
+  .load-top-row {
+    display: flex;
+    align-items: baseline;
     justify-content: space-between;
-    font-size: 11px;
-    color: #64748b;
-    margin-top: 2px;
+    gap: 10px;
   }
-  @keyframes splashSlide {
-    0% { transform: translateX(-110%); }
-    100% { transform: translateX(260%); }
+  .load-module-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
-  @keyframes logoFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+  #splash-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #splash-files {
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 10.5px;
+    color: #60a5fa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.92;
+  }
+  .pct-badge {
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #f8fafc;
+    flex: none;
+    line-height: 1;
+  }
+  .progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(148, 163, 184, 0.14);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 55%, #38bdf8 100%);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
+  }
+  @keyframes orbSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes orbPulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.06); }
   }
 </style>
 </head>
 <body>
   <div class="splash-card">
-    <div class="splash-logo-wrap">
-      <img src="build/logo.png" alt="Kensho Pro Logo" class="splash-logo" onerror="this.onerror=null;this.src='build/icon.png';" />
+    <div class="brand-head">
+      <img src="build/logo.png" alt="Kensho Pro Logo" class="brand-logo" onerror="this.onerror=null;this.src='build/icon.png';" />
+      <div class="brand-meta">
+        <div class="brand-name">Kensho Pro</div>
+        <div class="brand-ver">Version 1.2.3.2 STABLE &middot; O1R0A7N5G0E002026A1232</div>
+      </div>
     </div>
-    <div class="splash-title-row">
-      <div class="splash-title">Kensho Pro</div>
-      <span class="splash-version" id="splash-version">v1.2.3</span>
+
+    <div class="orb-stage">
+      <div class="orb-glow"></div>
+      <div class="orb-halo"></div>
+      <div id="splash-orb"></div>
     </div>
-    <div class="splash-sub">CAD · CAM · PDF Precision Compare &amp; Engineering Studio</div>
-    <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
-    <div class="splash-footer">
-      <span id="splash-status">Initializing native vector &amp; compare engines…</span>
-      <span>Kensho Studio · Version 1.2.3</span>
+
+    <div class="load-footer">
+      <div class="load-top-row">
+        <div class="load-module-wrap">
+          <div id="splash-status">Initializing GPU Pipeline…</div>
+          <div id="splash-files">gpu_engine.js</div>
+        </div>
+        <div class="pct-badge" id="splash-pct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-bar" id="splash-progress-bar"></div></div>
     </div>
   </div>
+
+  <script src="thinking_orbs.js"></script>
+  <script>
+    (function () {
+      const TOTAL_BOOT_MS = 15000;
+      const stages = [
+        { at: 0.00, label: 'Initializing GPU & Runtime…',      files: 'gpu_engine.js · preload.js',                           orb: 'working' },
+        { at: 0.14, label: 'Loading Compare Engine…',          files: 'dxf_compare_core.js · compare_memory_guard.js',        orb: 'searching' },
+        { at: 0.28, label: 'Loading PCB CAM Engine…',          files: 'cam_engine.js · worker_engine.js',                     orb: 'solving' },
+        { at: 0.43, label: 'Loading AutoCAD DXF Studio…',      files: 'dxf_engine.js · dxf_studio.js · dxf_studio_tools.js',  orb: 'shaping' },
+        { at: 0.58, label: 'Loading 3D CAD & SolidWorks…',     files: 'cad_kernel.js · cad3d_engine.js · solidworks_studio.js', orb: 'weaving' },
+        { at: 0.74, label: 'Loading PDF Studio & Metrology…',  files: 'editor.js · measure_engine.js · pdf.min.js',           orb: 'searching' },
+        { at: 0.88, label: 'Loading Workstation Shell…',       files: 'ui_ribbon.js · ui_workstation_polish.js · app.js',     orb: 'shaping' }
+      ];
+
+      const statusEl = document.getElementById('splash-status');
+      const filesEl = document.getElementById('splash-files');
+      const pctEl = document.getElementById('splash-pct');
+      const barEl = document.getElementById('splash-progress-bar');
+      const orbEl = document.getElementById('splash-orb');
+
+      const orbCtrl = (window.ThinkingOrbs && orbEl)
+        ? window.ThinkingOrbs.mount(orbEl, {
+            state: 'working',
+            size: 64,
+            displaySize: 72,
+            theme: 'dark',
+            speed: 1.25,
+            ignoreReducedMotion: true
+          })
+        : null;
+
+      const startAt = Date.now();
+      let lastStageIdx = -1;
+
+      function updateProgress() {
+        const elapsed = Math.max(0, Date.now() - startAt);
+        const ratio = Math.min(1, elapsed / TOTAL_BOOT_MS);
+        const pct = Math.min(100, Math.floor(ratio * 100));
+
+        if (barEl) barEl.style.width = (ratio * 100).toFixed(2) + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+
+        let stageIdx = 0;
+        for (let i = stages.length - 1; i >= 0; i--) {
+          if (ratio >= stages[i].at) { stageIdx = i; break; }
+        }
+        if (stageIdx !== lastStageIdx) {
+          lastStageIdx = stageIdx;
+          const st = stages[stageIdx];
+          if (statusEl) statusEl.textContent = st.label;
+          if (filesEl) filesEl.textContent = st.files;
+          if (orbCtrl) {
+            orbCtrl.setState(st.orb);
+            orbCtrl.poke();
+          }
+        }
+        if (ratio >= 1) {
+          if (statusEl) statusEl.textContent = 'Launching Kensho Pro…';
+          if (filesEl) filesEl.textContent = 'All modules ready';
+          if (pctEl) pctEl.textContent = '100%';
+          if (barEl) barEl.style.width = '100%';
+          return true;
+        }
+        return false;
+      }
+
+      function loop() {
+        if (!updateProgress()) {
+          requestAnimationFrame(loop);
+        }
+      }
+      requestAnimationFrame(loop);
+      // Fallback interval keeps progress smooth even if window focus changes
+      const iv = setInterval(() => {
+        if (updateProgress()) clearInterval(iv);
+      }, 100);
+    })();
+  </script>
 </body>
 </html>

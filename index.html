@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Kensho Pro - PDF Compare &amp; Review | Kensho Studio</title><link rel="icon" href="build/icon.png" type="image/png"><link rel="stylesheet" href="style.css"></head>
+<html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none';"><title>Kensho Pro - PDF Compare &amp; Review | Kensho Studio</title><link rel="icon" href="build/icon.png" type="image/png"><link rel="stylesheet" href="style.css"></head>
 <body data-view="compare">
 <div id="busy" hidden></div>
 <div id="top">
- <div class="brand" id="brand-about" hidden style="display:none !important" title="About Kensho Pro 1.2.3"><b>Kensho Pro</b></div>
- <img src="build/logo.png" alt="Logo" class="rp-topbar-logo" id="rp-topbar-logo-btn" title="About Kensho Pro 1.2.3">
+ <div class="brand" id="brand-about" hidden style="display:none !important" title="About Kensho Pro 1.2.3.2"><b>Kensho Pro</b></div>
+ <img src="build/logo.png" alt="Logo" class="rp-topbar-logo" id="rp-topbar-logo-btn" title="About Kensho Pro 1.2.3.2">
  <nav id="menubar"></nav>
  <span id="docname" hidden style="display:none !important"></span>
  <span class="grow"></span>
@@ -67,8 +67,17 @@
  </label>
  <button id="shortcuts-btn" hidden style="display:none !important;width:0;height:0;padding:0;border:0;overflow:hidden"></button>
  <button id="top-settings-btn" class="ib rp-top-settings-btn" title="Open Workstation Settings Page — Language, Palette Paper, Panels & Layout, Compare & CAD Defaults (Ctrl+,)"><i data-ic="gear"></i><span>Settings</span></button>
- <button id="theme" class="ib" title="Toggle Dark / Light Theme (Ctrl+Shift+D)"><i data-ic="moon"></i></button>
- <button id="about-btn" class="ib" hidden style="display:none !important" title="About Kensho Pro (Version 1.2.3)"><i data-ic="info"></i></button>
+ <select id="theme-preset-sel" title="Select Workstation Color Theme (8 Dark &amp; Light Themes)">
+  <option value="dark">Obsidian Dark</option>
+  <option value="light">Crisp Daylight</option>
+  <option value="autocad">AutoCAD Classic</option>
+  <option value="solidworks">SolidWorks Blue</option>
+  <option value="blueprint">Blueprint Navy</option>
+  <option value="nord">Nordic Frost</option>
+  <option value="amber">PCB Amber Lab</option>
+  <option value="emerald">Soldermask Emerald</option>
+</select><button id="theme" class="ib" title="Toggle Dark / Light Theme (Ctrl+Shift+D)"><i data-ic="moon"></i></button>
+ <button id="about-btn" class="ib" hidden style="display:none !important" title="About Kensho Pro (Version 1.2.3.2)"><i data-ic="info"></i></button>
  
 </div>
 
@@ -686,7 +695,7 @@
     </div>
     <div class="rp-pdf-ruler-margin right"></div>
    </div>
-   <div id="ewrap" hidden><canvas id="ecv"></canvas><div id="etl"></div><canvas id="eov"></canvas></div>
+   <div id="ewrap" hidden><canvas id="ecv"></canvas><canvas id="ehq" hidden style="position:absolute;left:0;top:0;pointer-events:none;z-index:2"></canvas><div id="etl"></div><canvas id="eov"></canvas></div>
    <div id="e-floating-hud" class="rp-floating-hud" hidden>
     <button type="button" class="rp-hud-btn" id="eHudFirst" title="First Page (Ctrl+Home)"><i data-ic="pageFirst"></i></button>
     <button type="button" class="rp-hud-btn" id="eHudPrev" title="Previous Page (PageUp)"><i data-ic="prev"></i></button>
@@ -754,7 +763,7 @@
    <div class="rp-about-title">
     <div class="rp-about-title-row">
      <h2 id="rp-about-heading">Kensho Pro</h2>
-     <span class="rp-about-badge">Version 1.2.3</span>
+     <span class="rp-about-badge">Version 1.2.3.2 &middot; Build O1R0A7N5G0E002026A1232</span>
      <span class="rp-about-build">Build 2026.11 &middot; 64-Bit Desktop Workstation</span>
     </div>
     <p class="rp-about-sub">Engineering Drawing Compare, PDF Markup Studio, AutoCAD DXF &amp; PCB CAM / IPC Inspection Workbench</p>
@@ -834,5 +843,6 @@
 </div>
 <div id="printarea"></div>
 <script src="icons.js"></script><script src="lib/pdf.min.js"></script>
-<script src="lib/pdf.worker.min.js"></script><script src="lib/pdf-lib.min.js"></script><script src="pre.js"></script><script src="dxf_compare_core.js"></script><script src="dxf_engine.js"></script><script src="cam_engine.js"></script><script src="measure_engine.js"></script><script src="worker_engine.js"></script><script src="ui_i18n_catalog.js"></script><script src="ui_ribbon.js"></script><script src="dxf_studio_tools.js"></script><script src="dxf_studio.js"></script><script src="cad3d_engine.js"></script><script src="cad_kernel.js"></script><script src="solidworks_studio.js"></script><script src="compare_memory_guard.js"></script><script src="app.js"></script><script src="editor.js"></script><script src="menu.js"></script><script src="extras.js"></script><script src="pro.js"></script>
+<script src="lib/pdf.worker.min.js"></script><script src="lib/pdf-lib.min.js"></script><script src="pre.js"></script><script src="gpu_engine.js"></script>
+<script src="thinking_orbs.js"></script><script src="dxf_compare_core.js"></script><script src="dxf_engine.js"></script><script src="cam_engine.js"></script><script src="measure_engine.js"></script><script src="worker_engine.js"></script><script src="ui_i18n_catalog.js"></script><script src="ui_ribbon.js"></script><script src="dxf_studio_tools.js"></script><script src="dxf_studio.js"></script><script src="cad3d_engine.js"></script><script src="cad_kernel.js"></script><script src="solidworks_studio.js"></script><script src="compare_memory_guard.js"></script><script src="app.js"></script><script src="editor.js"></script><script src="menu.js"></script><script src="extras.js"></script><script src="pro.js"></script><script src="ui_workstation_polish.js"></script>
 </body></html>

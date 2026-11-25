@@ -266,11 +266,14 @@
         this.entities.set(id, { id, type, args });
       }
 
-      // Detect unit (mm vs in)
+      // Detect unit (mm vs in), including complex STEP entity instances
       for (const ent of this.entities.values()) {
         if (ent.type === 'CONVERSION_BASED_UNIT' && String(ent.args[0] || '').toUpperCase().includes('INCH')) {
           this.unitName = 'in';
         }
+      }
+      if (this.unitName !== 'in' && /CONVERSION_BASED_UNIT\s*\(\s*'[^']*INCH[^']*'/i.test(dataStr)) {
+        this.unitName = 'in';
       }
 
       const getEnt = refObj => (refObj && typeof refObj === 'object' && refObj.ref != null) ? this.entities.get(refObj.ref) : null;
@@ -310,32 +313,67 @@
         return buildAxisFrame(o, z, x);
       };
 
-      // Extract RGB colors mapped by styled item target
+      // Extract real STEP AP214/AP242 RGB & predefined colors mapped by styled item target
+      const PREDEF_STEP_COLORS = {
+        red: '#dc2626', green: '#16a34a', blue: '#2563eb', yellow: '#eab308',
+        magenta: '#d946ef', cyan: '#06b6d4', white: '#f1f5f9', black: '#1e293b',
+        orange: '#f97316', grey: '#94a3b8', gray: '#94a3b8'
+      };
       const itemColors = new Map();
+      const overrideColors = new Map();
+      let defaultRepColor = null;
+
       for (const ent of this.entities.values()) {
         if (ent.type === 'COLOUR_RGB' && ent.args.length >= 4) {
-          const r = Math.max(0, Math.min(255, Math.round((Number(ent.args[1]) || 0) * 255)));
-          const g = Math.max(0, Math.min(255, Math.round((Number(ent.args[2]) || 0) * 255)));
-          const b = Math.max(0, Math.min(255, Math.round((Number(ent.args[3]) || 0) * 255)));
+          const rRaw = Number(ent.args[1]);
+          const gRaw = Number(ent.args[2]);
+          const bRaw = Number(ent.args[3]);
+          const scale = (rRaw > 1.001 || gRaw > 1.001 || bRaw > 1.001) ? 1 : 255;
+          const r = Math.max(0, Math.min(255, Math.round((Number.isFinite(rRaw) ? rRaw : 0) * scale)));
+          const g = Math.max(0, Math.min(255, Math.round((Number.isFinite(gRaw) ? gRaw : 0) * scale)));
+          const b = Math.max(0, Math.min(255, Math.round((Number.isFinite(bRaw) ? bRaw : 0) * scale)));
           ent._hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        } else if (ent.type === 'DRAUGHTING_PRE_DEFINED_COLOUR' && ent.args.length >= 1) {
+          const cname = String(ent.args[0] || '').trim().toLowerCase();
+          if (PREDEF_STEP_COLORS[cname]) ent._hex = PREDEF_STEP_COLORS[cname];
         }
       }
-      for (const ent of this.entities.values()) {
-        if (ent.type === 'STYLED_ITEM' && ent.args[2] && ent.args[2].ref != null) {
-          const findRgbHex = (node, depth = 0) => {
-            if (!node || depth > 5) return null;
-            if (node._hex) return node._hex;
-            if (Array.isArray(node)) {
-              for (const x of node) { const h = findRgbHex(x, depth + 1); if (h) return h; }
-              return null;
-            }
-            if (node.ref != null) return findRgbHex(this.entities.get(node.ref), depth + 1);
-            if (node.args) return findRgbHex(node.args, depth + 1);
-            return null;
-          };
-          const hex = findRgbHex(ent.args[1], 0);
-          if (hex) itemColors.set(ent.args[2].ref, hex);
+
+      const findRgbHex = (node, depth = 0, visited = new Set()) => {
+        if (!node || depth > 28) return null;
+        if (node._hex) return node._hex;
+        if (Array.isArray(node)) {
+          for (const x of node) {
+            const h = findRgbHex(x, depth + 1, visited);
+            if (h) return h;
+          }
+          return null;
         }
+        if (node.ref != null) {
+          if (visited.has(node.ref)) return null;
+          visited.add(node.ref);
+          return findRgbHex(this.entities.get(node.ref), depth + 1, visited);
+        }
+        if (node.args) return findRgbHex(node.args, depth + 1, visited);
+        return null;
+      };
+
+      for (const ent of this.entities.values()) {
+        if ((ent.type === 'STYLED_ITEM' || ent.type === 'OVER_RIDING_STYLED_ITEM') && ent.args[2] && ent.args[2].ref != null) {
+          const hex = findRgbHex(ent.args[1], 0, new Set());
+          if (hex) {
+            if (ent.type === 'OVER_RIDING_STYLED_ITEM') overrideColors.set(ent.args[2].ref, hex);
+            else itemColors.set(ent.args[2].ref, hex);
+            const targetEnt = this.entities.get(ent.args[2].ref);
+            if (!defaultRepColor && targetEnt && /SHAPE_REPRESENTATION|SHELL_BASED_SURFACE_MODEL/i.test(targetEnt.type)) {
+              defaultRepColor = hex;
+            }
+          }
+        }
+      }
+      // Merge OVER_RIDING_STYLED_ITEM on top of STYLED_ITEM so face overrides always win
+      for (const [refId, hex] of overrideColors.entries()) {
+        itemColors.set(refId, hex);
       }
 
       // Tessellate an EDGE_CURVE into 3D polyline points
@@ -481,15 +519,18 @@
             for (let k = 1; k < outerLoopPts.length - 1; k++) {
               const a = v0, b = outerLoopPts[k], c = outerLoopPts[k + 1];
               const nrm = vNorm(vCross(vSub(b, a), vSub(c, a)));
-              triangles.push({ a, b, c, n: nrm, color: faceColor });
+              triangles.push({ a, b, c, n: nrm, color: faceColor, _origColor: faceColor });
             }
           }
         }
+        const resolvedBodyCol = bodyColor || '#64748b';
         return {
           id: `body_${this.bodies.length + 1}`,
           name: name || `Solid_${this.bodies.length + 1}`,
           visible: true,
-          color: bodyColor || '#64748b',
+          color: resolvedBodyCol,
+          _origColor: resolvedBodyCol,
+          hasStepColor: !!(bodyColor && bodyColor !== '#7c8ea6'),
           faceCount,
           triangles,
           edges
@@ -502,7 +543,7 @@
           : (productNames[idx] || `SolidBody_${idx + 1}`);
         const shellEnt = (sEnt.type === 'CLOSED_SHELL' || sEnt.type === 'OPEN_SHELL') ? sEnt : getEnt(sEnt.args[1]);
         const faceRefs = (shellEnt && Array.isArray(shellEnt.args[1])) ? shellEnt.args[1] : [];
-        const bColor = itemColors.get(sEnt.id) || (shellEnt && itemColors.get(shellEnt.id)) || '#7c8ea6';
+        const bColor = itemColors.get(sEnt.id) || (shellEnt && itemColors.get(shellEnt.id)) || defaultRepColor || '#7c8ea6';
         const body = buildBodyFromFaces(bName, faceRefs, bColor);
         if (body.triangles.length > 0 || body.edges.length > 0) this.bodies.push(body);
       });
@@ -612,7 +653,7 @@
         const p = t.split(/\s+/);
         if (p.length >= 4) verts.push([parseFloat(p[1]) || 0, parseFloat(p[2]) || 0, parseFloat(p[3]) || 0]);
       } else if (t.startsWith('f ')) {
-        const idx = t.split(/\s+/).slice(1).map(tok => parseInt(tok.split('/')[0], 10) - 1).filter(k => k >= 0 && k < verts.length);
+        const idx = t.split(/\s+/).slice(1).map(tok => { const raw = parseInt(tok.split('/')[0], 10); if (!Number.isFinite(raw) || raw === 0) return -1; return raw < 0 ? verts.length + raw : raw - 1; }).filter(k => k >= 0 && k < verts.length);
         if (idx.length >= 3) {
           for (let k = 1; k < idx.length - 1; k++) {
             const a = verts[idx[0]], b = verts[idx[k]], c = verts[idx[k + 1]];
@@ -677,6 +718,7 @@
       '0', 'ENDSEC',
       '0', 'SECTION', '2', 'ENTITIES'
     ];
+    const seenEdges = new Set();
     for (const body of model.bodies) {
       if (body.visible === false) continue;
       const lyr = String(body.name || 'SOLID').replace(/[^A-Za-z0-9_-]/g, '_');
@@ -685,7 +727,13 @@
         for (let i = 1; i < pts.length; i++) {
           const [x1, y1] = projectPt(pts[i - 1]);
           const [x2, y2] = projectPt(pts[i]);
+          if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) continue;
           if (Math.hypot(x2 - x1, y2 - y1) < 1e-5) continue;
+          const a1 = `${Math.round(x1 * 1e3)},${Math.round(y1 * 1e3)}`;
+          const a2 = `${Math.round(x2 * 1e3)},${Math.round(y2 * 1e3)}`;
+          const key = `${lyr}|${a1 < a2 ? a1 + '|' + a2 : a2 + '|' + a1}`;
+          if (seenEdges.has(key)) continue;
+          seenEdges.add(key);
           lines.push(
             '0', 'LINE', '8', lyr,
             '10', x1.toFixed(4), '20', y1.toFixed(4),
@@ -854,6 +902,22 @@ DATA;
 #115 = ADVANCED_FACE('F_LEFT',(#105),$,.T.);
 #120 = CLOSED_SHELL('SHELL_1',(#110,#111,#112,#113,#114,#115));
 #121 = MANIFOLD_SOLID_BREP('${name}',#120);
+#200 = COLOUR_RGB('Anodized_Blue',0.18,0.48,0.82);
+#201 = FILL_AREA_STYLE_COLOUR('',#200);
+#202 = FILL_AREA_STYLE('',(#201));
+#203 = SURFACE_STYLE_FILL_AREA(#202);
+#204 = SURFACE_SIDE_STYLE('',(#203));
+#205 = SURFACE_STYLE_USAGE(.BOTH.,#204);
+#206 = PRESENTATION_STYLE_ASSIGNMENT((#205));
+#207 = STYLED_ITEM('BodyColor',(#206),#121);
+#210 = COLOUR_RGB('Machined_Gold',0.88,0.68,0.18);
+#211 = FILL_AREA_STYLE_COLOUR('',#210);
+#212 = FILL_AREA_STYLE('',(#211));
+#213 = SURFACE_STYLE_FILL_AREA(#212);
+#214 = SURFACE_SIDE_STYLE('',(#213));
+#215 = SURFACE_STYLE_USAGE(.BOTH.,#214);
+#216 = PRESENTATION_STYLE_ASSIGNMENT((#215));
+#217 = OVER_RIDING_STYLED_ITEM('TopFaceColor',(#216),#111,#207);
 ENDSEC;
 END-ISO-10303-21;`;
   }

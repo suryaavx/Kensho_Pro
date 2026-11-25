@@ -10,23 +10,24 @@
   "scripts": {
     "start": "electron .",
     "test": "node tests/v21_test_suite.js",
-    "dist:dir": "electron-builder --win dir --x64",
+    "dist:dir": "node package_audit.js --fix && electron-builder --win dir --x64 && node package_audit.js --verify-dist dist/win-unpacked --fix",
     "dist:portable": "electron-builder --win portable --prepackaged dist/win-unpacked --x64",
     "patch:exe": "node patch_exe.js \"dist/win-unpacked/Kensho Pro.exe\" build/icon.ico",
     "dist:setup": "node build_setup.js",
     "dist:all": "npm run dist:dir && npm run patch:exe && npm run dist:portable && npm run dist:setup",
-    "dist:linux:dir": "electron-builder --linux dir --x64",
+    "dist:linux:dir": "node package_audit.js --fix && electron-builder --linux dir --x64 && node package_audit.js --verify-dist dist/linux-unpacked --fix",
     "dist:linux:portable": "electron-builder --linux AppImage --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
     "dist:linux:setup": "electron-builder --linux deb --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
     "dist:linux": "npm run dist:linux:dir && electron-builder --linux AppImage deb --prepackaged dist/linux-unpacked --x64 && node build_linux_setup.js",
     "build": "npm run dist:all",
     "dist": "npm run dist:all",
-    "pack": "npm run dist:dir"
+    "pack": "npm run dist:dir",
+    "audit:pkg": "node package_audit.js --fix"
   },
   "devDependencies": {
-    "electron": "^45.1.0",
-    "electron-builder": "^26.18.0",
-    "resedit": "^2.0.0"
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.1",
+    "resedit": "^2.0.3"
   },
   "build": {
     "appId": "in.textportdocx.kenshopro",
@@ -66,7 +67,16 @@
       "splash.html",
       "cad3d_engine.js",
       "solidworks_studio.js",
-      "cad_kernel.js"
+      "cad_kernel.js",
+      "ui_workstation_polish.js",
+      "version.json",
+      "package.json",
+      "gpu_engine.js",
+      "thinking_orbs.js",
+      "!node_modules/pdfjs-dist/**",
+      "!node_modules/pdf-lib/**",
+      "!node_modules/**/*.map",
+      "!node_modules/**/{test,tests,docs,examples}/**"
     ],
     "win": {
       "target": [
@@ -76,7 +86,7 @@
       "icon": "build/icon.ico"
     },
     "portable": {
-      "artifactName": "KenshoPro-Portable-1.2.3.exe"
+      "artifactName": "KenshoPro-Portable-1.2.3.2.exe"
     },
     "nsis": {
       "oneClick": false,
@@ -85,9 +95,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "license": "LICENSE.txt",
-      "artifactName": "KenshoPro-Setup-1.2.3.exe"
+      "artifactName": "KenshoPro-Setup-1.2.3.2.exe"
     },
-    "compression": "normal",
+    "compression": "maximum",
     "linux": {
       "target": [
         "dir",
@@ -99,7 +109,7 @@
       "category": "Graphics;Engineering;Office;",
       "executableName": "kensho-pro",
       "synopsis": "Engineering Drawing Compare, PDF Markup Studio, AutoCAD DXF & CAM Workbench",
-      "description": "Kensho Pro 1.2.3: Compare engineering drawings pixel-by-pixel, inspect PCB Gerber RS-274X / Excellon Drill / IPC-D-356 netlists, import/export AutoCAD DXF, and edit/markup PDFs 100% offline.",
+      "description": "Kensho Pro 1.2.3.2 Stable (Build O1R0A7N5G0E002026A1232): Compare engineering drawings pixel-by-pixel, inspect PCB Gerber RS-274X / Excellon Drill / IPC-D-356 netlists, import/export AutoCAD DXF, 3D STEP OpenGL GPU, and edit/markup PDFs 100% offline.",
       "mimeTypes": [
         "application/pdf",
         "image/vnd.dxf",
@@ -121,10 +131,10 @@
       }
     },
     "appImage": {
-      "artifactName": "KenshoPro-Portable-1.2.3-${arch}.AppImage"
+      "artifactName": "KenshoPro-Portable-1.2.3.2-${arch}.AppImage"
     },
     "deb": {
-      "artifactName": "KenshoPro-Setup-1.2.3-${arch}.deb",
+      "artifactName": "KenshoPro-Setup-1.2.3.2-${arch}.deb",
       "afterInstall": "build/linux/after-install.sh",
       "afterRemove": "build/linux/after-remove.sh",
       "depends": [
@@ -140,15 +150,37 @@
       ]
     },
     "rpm": {
-      "artifactName": "KenshoPro-Setup-1.2.3-${arch}.rpm",
+      "artifactName": "KenshoPro-Setup-1.2.3.2-${arch}.rpm",
       "afterInstall": "build/linux/after-install.sh",
       "afterRemove": "build/linux/after-remove.sh"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "build",
+        "to": "build"
+      },
+      {
+        "from": "LICENSE.txt",
+        "to": "LICENSE.txt"
+      }
+    ],
+    "asarUnpack": [
+      "build/**",
+      "worker.js",
+      "lib/**"
+    ],
+    "buildVersion": "O1R0A7N5G0E002026A1232"
   },
   "dependencies": {
     "pdf-lib": "1.17.1",
-    "pdfjs-dist": "^6.4.299"
+    "pdfjs-dist": "^6.5.438"
   },
   "license": "SEE LICENSE IN LICENSE.txt",
-  "homepage": "https://textportdocx.in"
+  "homepage": "https://textportdocx.in",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "displayVersion": "1.2.3.2",
+  "buildVersion": "O1R0A7N5G0E002026A1232",
+  "releaseChannel": "Stable"
 }

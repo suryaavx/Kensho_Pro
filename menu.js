@@ -7,7 +7,7 @@
  * ============================================================================ */
 // ===== Menu bar, shortcuts, preferences, help, external open =====
 (() => {
-const V = () => document.body.dataset.view, ED = () => V() === 'edit', DXF_V = () => V() === 'dxf', E = () => RE.E;
+const V = () => document.body.dataset.view, SW_V = () => { if (V() === 'solidworks') return true; const h = document.getElementById('sw-studio-host'); return !!(h && !h.hidden); }, ED = () => V() === 'edit', DXF_V = () => V() === 'dxf' && !SW_V(), E = () => RE.E;
 const hasDoc = () => ED() ? !!E().bytes : !!(S.A && S.B);
 const recents = () => { try { return JSON.parse(localStorage.getItem('recent') || '[]'); } catch (e) { return []; } };
 async function openRecent(r) {
@@ -67,14 +67,14 @@ const MENUS = {
     },
     '-',
     {
-      l: DXF_V() ? 'Save .DXF' : (ED() ? 'Save' : 'Save .redline'),
+      l: SW_V() ? 'Save .kensho3d' : (DXF_V() ? 'Save .DXF' : (ED() ? 'Save' : 'Save .redline')),
       ic: 'save',
-      a: () => DXF_V() && window.DXFStudio ? window.DXFStudio.saveModifiedDXFFile() : (ED() ? ACT.eSave() : (window.UIRibbon && window.UIRibbon.saveSessionFile && window.UIRibbon.saveSessionFile()))
+      a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.saveKensho3D() : (DXF_V() && window.DXFStudio ? window.DXFStudio.saveModifiedDXFFile() : (ED() ? ACT.eSave() : (window.UIRibbon && window.UIRibbon.saveSessionFile && window.UIRibbon.saveSessionFile())))
     },
     {
-      l: DXF_V() ? 'Export .dxf' : (ED() ? 'Save As' : 'Load .redline'),
+      l: SW_V() ? 'Export .STEP' : (DXF_V() ? 'Export .dxf' : (ED() ? 'Save As' : 'Load .redline')),
       ic: 'saveas',
-      a: () => DXF_V() && window.DXFStudio ? window.DXFStudio.saveModifiedDXFFile() : (ED() ? ACT.eSaveAs() : (window.UIRibbon && window.UIRibbon.loadSessionFile && window.UIRibbon.loadSessionFile()))
+      a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.exportCurrentModel('step') : (DXF_V() && window.DXFStudio ? window.DXFStudio.saveModifiedDXFFile() : (ED() ? ACT.eSaveAs() : (window.UIRibbon && window.UIRibbon.loadSessionFile && window.UIRibbon.loadSessionFile())))
     },
     '-',
     { l: 'Executive Audit PDF', ic: 'auditPdf', a: () => window.UIRibbon && window.UIRibbon.generateExecutiveAuditReport && window.UIRibbon.generateExecutiveAuditReport() },
@@ -88,8 +88,8 @@ const MENUS = {
   ],
 
   Edit: () => [
-    { l: 'Undo', ic: 'undo', a: () => ED() ? ACT.eUndo() : (DXF_V() && window.DXFStudio ? window.DXFStudio.undo() : (ACT.cUndo && ACT.cUndo())) },
-    { l: 'Redo', ic: 'redo', a: () => ED() ? ACT.eRedo() : (DXF_V() && window.DXFStudio ? window.DXFStudio.redo() : (ACT.cRedo && ACT.cRedo())) },
+    { l: 'Undo', ic: 'undo', a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.undoSW() : (ED() ? ACT.eUndo() : (DXF_V() && window.DXFStudio ? window.DXFStudio.undo() : (ACT.cUndo && ACT.cUndo()))) },
+    { l: 'Redo', ic: 'redo', a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.redoSW() : (ED() ? ACT.eRedo() : (DXF_V() && window.DXFStudio ? window.DXFStudio.redo() : (ACT.cRedo && ACT.cRedo()))) },
     '-',
     { l: 'Find', ic: 'search', a: () => { ensureEd(); ACT.find(); } },
     { l: 'Ignore Area', ic: 'ignore', ck: () => !!(S && S.ignMode), a: () => { ensureCmp(); ACT.ignore(); } },
@@ -106,7 +106,8 @@ const MENUS = {
     '-',
     { l: 'Compare', ck: () => V() === 'compare', a: () => setView('compare') },
     { l: 'PDF Studio', ck: () => ED(), a: () => setView('edit') },
-    { l: 'DXF Studio', ck: () => DXF_V(), a: () => setView('dxf') },
+    { l: 'CAD Studio (2D AutoCAD)', ck: () => DXF_V() && (!document.getElementById('sw-studio-host') || document.getElementById('sw-studio-host').hidden), a: () => { if (window.setCADStudioMode) window.setCADStudioMode('2d'); setView('dxf'); } },
+    { l: 'SolidWorks 3D Studio', ck: () => !!(document.getElementById('sw-studio-host') && !document.getElementById('sw-studio-host').hidden), a: () => { if (window.setCADStudioMode) window.setCADStudioMode('solidworks'); } },
     '-',
     {
       l: 'Review & Compare',
@@ -145,9 +146,9 @@ const MENUS = {
       ]
     },
     '-',
-    { l: 'Zoom In', ic: 'zoomin', a: () => ED() ? ACT.eZoomIn() : (DXF_V() && $('#dxf-st-zi') ? $('#dxf-st-zi').click() : ACT.cZoomIn()) },
-    { l: 'Zoom Out', ic: 'zoomout', a: () => ED() ? ACT.eZoomOut() : (DXF_V() && $('#dxf-st-zo') ? $('#dxf-st-zo').click() : ACT.cZoomOut()) },
-    { l: 'Fit & Sharpen', ic: 'fit', a: () => ED() ? ACT.eFit() : (DXF_V() && window.DXFStudio ? window.DXFStudio.zoomExtents() : ACT.cFit()) },
+    { l: 'Zoom In', ic: 'zoomin', a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.zoomBy(1.25) : (ED() ? ACT.eZoomIn() : (DXF_V() && $('#dxf-st-zi') ? $('#dxf-st-zi').click() : ACT.cZoomIn())) },
+    { l: 'Zoom Out', ic: 'zoomout', a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.zoomBy(0.8) : (ED() ? ACT.eZoomOut() : (DXF_V() && $('#dxf-st-zo') ? $('#dxf-st-zo').click() : ACT.cZoomOut())) },
+    { l: 'Fit & Sharpen', ic: 'fit', a: () => SW_V() && window.SolidWorksStudio ? window.SolidWorksStudio.zoomFit() : (ED() ? ACT.eFit() : (DXF_V() && window.DXFStudio ? window.DXFStudio.zoomExtents() : ACT.cFit())) },
     '-',
     {
       l: 'Workspace Panel Layout',
@@ -654,17 +655,20 @@ window.updateTitle = () => {
       : '';
     t = (d ? d + ' - ' : '') + 'Kensho Pro';
   }
-  document.title = t; $('#docname').textContent = d;
+  if (document.title !== t) document.title = t;
+  const dn = $('#docname');
+  if (dn && dn.textContent !== d) dn.textContent = d;
 };
-setInterval(window.updateTitle, 1200);
-window.openExternal = ({ name, path, b64, slot }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); if (/\.(kensho|redline)$/i.test(name) && window.UIRibbon && window.UIRibbon.restoreSessionFromText) { setView('compare'); window.UIRibbon.restoreSessionFromText(new TextDecoder().decode(u)); return; } if ((/\.dxf$/i.test(name) || (window.isCAMExt && window.isCAMExt(name))) && window.openExternalCADOrCAM) { window.openExternalCADOrCAM(u, name, path, slot); return; } if (slot) { setView('compare'); compareLoadBytes(slot, u, name, path); return; } setView('edit'); RE.openBytes(u, name, path); };
+setInterval(() => { if (!document.hidden) window.updateTitle(); }, 2000);
+window.openExternal = ({ name, path, b64, slot }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); if (/\.(kensho|redline)$/i.test(name) && window.UIRibbon && window.UIRibbon.restoreSessionFromText) { setView('compare'); window.UIRibbon.restoreSessionFromText(new TextDecoder().decode(u)); return; } if (/\.(step|stp|sldprt|sldasm|slddrw|stl|obj|kensho3d)$/i.test(name) && window.openSolidWorks3DFile) { window.openSolidWorks3DFile({ name, bytes: u, path }, slot || 'A'); return; } if ((/\.(dxf|dwg)$/i.test(name) || (window.isCAMExt && window.isCAMExt(name))) && window.openExternalCADOrCAM) { window.openExternalCADOrCAM(u, name, path, slot); return; } if (slot) { setView('compare'); compareLoadBytes(slot, u, name, path); return; } setView('edit'); RE.openBytes(u, name, path); };
 
 // ----- Expanded Keyboard Shortcuts Engine -----
 const KEYS = [
   // Workspaces & Global
   ['ctrl+1', 'all', () => setView('compare'), 'View', 'Compare & CAM Workbench'],
   ['ctrl+2', 'all', () => setView('edit'), 'View', 'PDF Markup Studio'],
-  ['ctrl+3', 'all', () => setView('dxf'), 'View', 'AutoCAD DXF Studio'],
+  ['ctrl+3', 'all', () => { if (window.setCADStudioMode) window.setCADStudioMode('2d'); setView('dxf'); }, 'View', 'CAD Studio (2D AutoCAD)'],
+  ['ctrl+4', 'all', () => { if (window.setCADStudioMode) window.setCADStudioMode('solidworks'); }, 'View', 'SolidWorks 3D Studio'],
   ['ctrl+o', 'all', () => DXF_V() && $('#dxf-st-open') ? $('#dxf-st-open').click() : (ED() ? ACT.eOpen() : ACT.openA()), 'File', 'Open Drawing (Active Workspace)'],
   ['ctrl+shift+o', 'all', () => { setView('compare'); ACT.openB(); }, 'File', 'Open Revised (Rev B) in Compare'],
   ['ctrl+alt+o', 'all', () => { ensureEd(); ACT.eOpen(); }, 'File', 'Open PDF in PDF Studio'],
@@ -812,12 +816,14 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape' && settingsModal) { settingsModal.remove(); return; }
   const guideModal = document.getElementById('rp-quick-guide-modal');
   if (e.key === 'Escape' && guideModal) { guideModal.remove(); return; }
+  const updModal = document.getElementById('rp-update-prompt-modal');
+  if (e.key === 'Escape' && updModal) { updModal.remove(); return; }
   if (e.key === 'Escape' && !$('#modal').hidden) { $('#modal').hidden = true; return; }
   if (e.key === 'Escape') closeMenu();
   const hudModal = $('#rp-keyboard-hud-modal');
   if (!$('#dlg').hidden || !$('#modal').hidden || guideModal || (hudModal && !hudModal.hidden) || e.isComposing) return;
   const k = keyOf(e);
-  const activeViewScope = ED() ? 'edit' : (DXF_V() ? 'dxf' : 'compare');
+  const activeViewScope = SW_V() ? 'solidworks' : (ED() ? 'edit' : (DXF_V() ? 'dxf' : 'compare'));
   if (window.ShortcutManager) {
     const reassignedAway = window.ShortcutManager.getAllItems().some(it =>
       (it.scope === activeViewScope || it.scope === 'all') &&
@@ -843,7 +849,8 @@ $('#close').onclick = closeAboutModal;
 $('#modal').onclick = e => { if (e.target.id === 'modal') closeAboutModal(); };
 if ($('#about-btn')) $('#about-btn').onclick = () => { $('#modal').hidden = false; };
 if ($('#brand-about')) $('#brand-about').onclick = () => { $('#modal').hidden = false; };
-const APP_CURRENT_VERSION = '1.1.0';
+const APP_CURRENT_VERSION = '1.2.3.2';
+const APP_BUILD_VERSION = 'O1R0A7N5G0E002026A1232';
 const UPDATE_MANIFEST_URL = 'https://kensho.textportdocx.in/version.json';
 
 function compareSemver(vRemote, vLocal) {

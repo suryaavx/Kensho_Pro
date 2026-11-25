@@ -1,7 +1,7 @@
 # Kensho Pro 1.0 — Enterprise-Grade Engineering Review & Compare Studio
 
 **Publisher / Developer:** Kensho Studio · [textportdocx.in](https://textportdocx.in)  
-**Version:** 1.2.3  
+**Version:** 1.2.3.2<br>
 **License:** 100% Free for both commercial and personal engineering use.  
 **Privacy & Security:** 100% Offline. Zero telemetry, zero network calls, zero external API dependencies. All PDF, CAD, and CAM operations run completely client-side in pure JavaScript and Web Workers.
 
@@ -19,7 +19,7 @@ The SolidWorks Studio workspace combines a categorized toolbar, feature manager 
 
 ---
 
-## What's New in Version 1.2.3
+## What's New in Version 1.2.3.2
 
 ### Module 1: Crisp Modern UI & Floating/Dockable Compare Layer Manager
 - **Categorized Ribbon Bar:** Clean tabbed ribbon bar organizing engineering tools:
@@ -122,8 +122,8 @@ npm run dist:all
 ```
 
 Outputs in `dist/`:
-- `dist/KenshoPro-Portable-1.2.3.exe` — Standalone single-file Windows Portable executable.
-- `dist/KenshoPro-Setup-1.2.3.exe` — Full Windows NSIS Setup Installer with Desktop/Start Menu shortcuts, `.pdf`/`.dxf`/`.gbr`/`.drl`/`.ipc`/`.redline` file associations, and Windows Explorer *"Compare with Kensho Pro"* right-click context menu.
+- `dist/KenshoPro-Portable-1.2.3.2.exe` — Standalone single-file Windows Portable executable.
+- `dist/KenshoPro-Setup-1.2.3.2.exe` — Full Windows NSIS Setup Installer with Desktop/Start Menu shortcuts, `.pdf`/`.dxf`/`.gbr`/`.drl`/`.ipc`/`.redline` file associations, and Windows Explorer *"Compare with Kensho Pro"* right-click context menu.
 
 ### 2. Linux (Portable `.AppImage` / `.tar.gz` & Setup `.deb` / `.run` / `install-linux.sh`)
 
@@ -136,9 +136,9 @@ npm run dist:linux
 
 Outputs in `dist/`:
 - **Linux Portable:**
-  - `dist/KenshoPro-Portable-1.2.3-x86_64.AppImage` — Universal single-file Linux Portable binary (`chmod +x` and run on any distro).
-  - `dist/KenshoPro-Portable-1.2.3-linux-x64.tar.gz` — Self-contained Portable bundle with `./KenshoPro-Portable.sh` (stores user profile/session data in local `./portable-data/` for USB/air-gapped use).
+  - `dist/KenshoPro-Portable-1.2.3.2-x86_64.AppImage` — Universal single-file Linux Portable binary (`chmod +x` and run on any distro).
+  - `dist/KenshoPro-Portable-1.2.3.2-linux-x64.tar.gz` — Self-contained Portable bundle with `./KenshoPro-Portable.sh` (stores user profile/session data in local `./portable-data/` for USB/air-gapped use).
 - **Linux Setup / Installers:**
-  - `dist/KenshoPro-Setup-1.2.3-amd64.deb` — Native Debian / Ubuntu / Linux Mint / Pop!_OS Setup package (`sudo apt install ./dist/KenshoPro-Setup-1.2.3-amd64.deb`).
-  - `dist/KenshoPro-Setup-1.2.3-linux-x64.run` — Self-extracting universal Linux Setup installer for Ubuntu, Debian, Fedora, RHEL, Arch, and openSUSE (`./dist/KenshoPro-Setup-1.2.3-linux-x64.run` for rootless user install or `sudo ./dist/KenshoPro-Setup-1.2.3-linux-x64.run` for system-wide `/opt/KenshoPro` install).
+  - `dist/KenshoPro-Setup-1.2.3.2-amd64.deb` — Native Debian / Ubuntu / Linux Mint / Pop!_OS Setup package (`sudo apt install ./dist/KenshoPro-Setup-1.2.3.2-amd64.deb`).
+  - `dist/KenshoPro-Setup-1.2.3.2-linux-x64.run` — Self-extracting universal Linux Setup installer for Ubuntu, Debian, Fedora, RHEL, Arch, and openSUSE (`./dist/KenshoPro-Setup-1.2.3.2-linux-x64.run` for rootless user install or `sudo ./dist/KenshoPro-Setup-1.2.3.2-linux-x64.run` for system-wide `/opt/KenshoPro` install).
   - `./install-linux.sh` — Direct setup & uninstaller script supporting `--user`, `--system`, and `--uninstall`, registering the XDG `.desktop` launcher, 512×512 icon, MIME types, `kensho-pro` CLI command, and Nautilus/Nemo *"Compare with Kensho Pro"* right-click action.

@@ -19,7 +19,10 @@ if [ -f "$APP_DIR/kensho-pro" ]; then
 fi
 
 # Install MIME package definition if bundled
-if [ -f "$APP_DIR/resources/app/build/linux/in.textportdocx.kenshopro.xml" ]; then
+if [ -f "$APP_DIR/resources/build/linux/in.textportdocx.kenshopro.xml" ]; then
+  mkdir -p /usr/share/mime/packages 2>/dev/null || true
+  cp -f "$APP_DIR/resources/build/linux/in.textportdocx.kenshopro.xml" /usr/share/mime/packages/in.textportdocx.kenshopro.xml 2>/dev/null || true
+elif [ -f "$APP_DIR/resources/app/build/linux/in.textportdocx.kenshopro.xml" ]; then
   mkdir -p /usr/share/mime/packages 2>/dev/null || true
   cp -f "$APP_DIR/resources/app/build/linux/in.textportdocx.kenshopro.xml" /usr/share/mime/packages/in.textportdocx.kenshopro.xml 2>/dev/null || true
 elif [ -f "$APP_DIR/build/linux/in.textportdocx.kenshopro.xml" ]; then

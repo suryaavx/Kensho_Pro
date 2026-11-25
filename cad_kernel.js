@@ -256,9 +256,12 @@
   }
 
   // ---- Transform Helpers (Translate, Rotate Z, Mirror) ----
-  function cloneBodyWithTransform(body, fn, newId, newName) {
+  function cloneBodyWithTransform(body, fn, newId, newName, flipWinding = false) {
     const triangles = (body.triangles || []).map(t => {
-      const a = fn(t.a), b = fn(t.b), c = fn(t.c);
+      const a = fn(t.a);
+      const b0 = fn(t.b), c0 = fn(t.c);
+      const b = flipWinding ? c0 : b0;
+      const c = flipWinding ? b0 : c0;
       return { a, b, c, n: vNorm(vCross(vSub(b, a), vSub(c, a))), color: t.color };
     });
     const edges = (body.edges || []).map(ed => ({
@@ -326,8 +329,8 @@
     if (!isFinite(minX)) { minX = 0; minY = 0; minZ = 0; maxX = 100; maxY = 100; maxZ = 100; }
     const sizeX = maxX - minX, sizeY = maxY - minY, sizeZ = maxZ - minZ;
     const center = [(minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2];
-    const volumeMm3 = Math.max(0, Math.abs(signedVol));
-    const com = Math.abs(signedVol) > 1e-4 ? [comX / signedVol, comY / signedVol, comZ / signedVol] : center;
+    const volumeMm3 = Math.max(0, signedVol);
+    const com = signedVol > 1e-4 ? [comX / signedVol, comY / signedVol, comZ / signedVol] : center;
     const densityMap = {
       'Aluminum 6061-T6': 2.70, 'Mild Steel (AISI 1018)': 7.87, 'Stainless Steel 304': 8.00,
       'Copper (C110)': 8.96, 'Brass (C360)': 8.50, 'Titanium Ti-6Al-4V': 4.43,
@@ -607,7 +610,7 @@
             const plane = String(p.mirrorPlane || 'right').toLowerCase();
             bodies.push(cloneBodyWithTransform(src, pt => (
               plane === 'front' ? [pt[0], -pt[1], pt[2]] : (plane === 'top' ? [pt[0], pt[1], -pt[2]] : [-pt[0], pt[1], pt[2]])
-            ), `${f.id}_mir`, `${src.name}_Mirror`));
+            ), `${f.id}_mir`, `${src.name}_Mirror`, true));
           }
         }
       }
@@ -627,7 +630,7 @@
         fileName: `${this.name}.kensho3d`,
         format: 'KENSHO3D',
         unitName: this.unitName,
-        header: { name: this.name, schema: 'KenshoPro Parametric CAD 1.2.3' },
+        header: { name: this.name, schema: 'KenshoPro Parametric CAD 1.2.3.2' },
         bodies: this.bodies,
         holes: this.holes,
         assemblyNodes: this.bodies.map((b, i) => ({ id: i + 1, name: b.name })),
@@ -644,7 +647,8 @@
         unitName: this.unitName,
         material: this.material,
         features: this.features,
-        mates: this.mates
+        mates: this.mates,
+        rollbackIndex: this.rollbackIndex
       }, null, 2);
     }
 
@@ -655,6 +659,7 @@
       doc.material = data.material || 'Aluminum 6061-T6';
       doc.features = Array.isArray(data.features) ? data.features : [];
       doc.mates = Array.isArray(data.mates) ? data.mates : [];
+      doc.rollbackIndex = typeof data.rollbackIndex === 'number' ? data.rollbackIndex : null;
       doc.rebuild();
       return doc;
     }
@@ -669,7 +674,7 @@
       'ISO-10303-21;',
       'HEADER;',
       `FILE_DESCRIPTION(('Exported by KenshoPro Parametric CAD Backend'),'2;1');`,
-      `FILE_NAME('${name}.step','${new Date().toISOString()}',('Kensho Studio'),('Kensho Pro'),'CADKernel','KenshoPro 1.2.3','');`,
+      `FILE_NAME('${name}.step','${new Date().toISOString()}',('Kensho Studio'),('Kensho Pro'),'CADKernel','KenshoPro 1.2.3.2','');`,
       `FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));`,
       'ENDSEC;',
       'DATA;',
@@ -692,20 +697,40 @@
 
     for (const body of bodies) {
       const faceIds = [];
+      const emitLine = (p0, p1) => {
+        const dv = vSub(p1, p0);
+        const dn = vNorm(dv);
+        const len = Math.max(1e-6, Math.hypot(dv[0], dv[1], dv[2]));
+        const cp = nextId++, dr = nextId++, vc = nextId++, ln = nextId++;
+        lines.push(`#${cp} = CARTESIAN_POINT('',(${p0[0].toFixed(4)},${p0[1].toFixed(4)},${p0[2].toFixed(4)}));`);
+        lines.push(`#${dr} = DIRECTION('',(${dn[0].toFixed(6)},${dn[1].toFixed(6)},${dn[2].toFixed(6)}));`);
+        lines.push(`#${vc} = VECTOR('',#${dr},${len.toFixed(4)});`);
+        lines.push(`#${ln} = LINE('',#${cp},#${vc});`);
+        return ln;
+      };
       for (const tri of (body.triangles || [])) {
         const va = getPtRef(tri.a), vb = getPtRef(tri.b), vc = getPtRef(tri.c);
+        const l1 = emitLine(tri.a, tri.b), l2 = emitLine(tri.b, tri.c), l3 = emitLine(tri.c, tri.a);
         const e1 = nextId++, e2 = nextId++, e3 = nextId++;
         const oe1 = nextId++, oe2 = nextId++, oe3 = nextId++;
         const lp = nextId++, fb = nextId++, af = nextId++;
-        lines.push(`#${e1} = EDGE_CURVE('',#${va},#${vb},$,.T.);`);
-        lines.push(`#${e2} = EDGE_CURVE('',#${vb},#${vc},$,.T.);`);
-        lines.push(`#${e3} = EDGE_CURVE('',#${vc},#${va},$,.T.);`);
+        const pOrig = nextId++, pNorm = nextId++, pRef = nextId++, pAxis = nextId++, pPln = nextId++;
+        const n = tri.n || vNorm(vCross(vSub(tri.b, tri.a), vSub(tri.c, tri.a)));
+        const refDir = vNorm(vSub(tri.b, tri.a));
+        lines.push(`#${e1} = EDGE_CURVE('',#${va},#${vb},#${l1},.T.);`);
+        lines.push(`#${e2} = EDGE_CURVE('',#${vb},#${vc},#${l2},.T.);`);
+        lines.push(`#${e3} = EDGE_CURVE('',#${vc},#${va},#${l3},.T.);`);
         lines.push(`#${oe1} = ORIENTED_EDGE('',*,*,#${e1},.T.);`);
         lines.push(`#${oe2} = ORIENTED_EDGE('',*,*,#${e2},.T.);`);
         lines.push(`#${oe3} = ORIENTED_EDGE('',*,*,#${e3},.T.);`);
         lines.push(`#${lp} = EDGE_LOOP('',(#${oe1},#${oe2},#${oe3}));`);
         lines.push(`#${fb} = FACE_OUTER_BOUND('',#${lp},.T.);`);
-        lines.push(`#${af} = ADVANCED_FACE('',(#${fb}),$,.T.);`);
+        lines.push(`#${pOrig} = CARTESIAN_POINT('',(${tri.a[0].toFixed(4)},${tri.a[1].toFixed(4)},${tri.a[2].toFixed(4)}));`);
+        lines.push(`#${pNorm} = DIRECTION('',(${n[0].toFixed(6)},${n[1].toFixed(6)},${n[2].toFixed(6)}));`);
+        lines.push(`#${pRef} = DIRECTION('',(${refDir[0].toFixed(6)},${refDir[1].toFixed(6)},${refDir[2].toFixed(6)}));`);
+        lines.push(`#${pAxis} = AXIS2_PLACEMENT_3D('',#${pOrig},#${pNorm},#${pRef});`);
+        lines.push(`#${pPln} = PLANE('',#${pAxis});`);
+        lines.push(`#${af} = ADVANCED_FACE('',(#${fb}),#${pPln},.T.);`);
         faceIds.push(`#${af}`);
       }
       if (faceIds.length) {
@@ -763,9 +788,13 @@
   function exportMultiViewDrawingDXF(modelOrDoc) {
     const bodies = (modelOrDoc && modelOrDoc.bodies) ? modelOrDoc.bodies.filter(b => b.visible !== false) : [];
     const stats = (modelOrDoc && modelOrDoc.stats) || computeFullMassProperties(bodies);
-    const sx = Math.max(10, stats.sizeX || 100);
-    const sy = Math.max(10, stats.sizeY || 60);
-    const sz = Math.max(10, stats.sizeZ || 20);
+    const hasFiniteBounds = !!(bodies.length && stats && stats.bounds && Number.isFinite(stats.bounds.minX) && Number.isFinite(stats.bounds.minY) && Number.isFinite(stats.bounds.minZ));
+    const bMinX = hasFiniteBounds ? stats.bounds.minX : 0;
+    const bMinY = hasFiniteBounds ? stats.bounds.minY : 0;
+    const bMinZ = hasFiniteBounds ? stats.bounds.minZ : 0;
+    const sx = Math.max(10, (stats && Number.isFinite(stats.sizeX) && stats.sizeX > 0) ? stats.sizeX : 100);
+    const sy = Math.max(10, (stats && Number.isFinite(stats.sizeY) && stats.sizeY > 0) ? stats.sizeY : 60);
+    const sz = Math.max(10, (stats && Number.isFinite(stats.sizeZ) && stats.sizeZ > 0) ? stats.sizeZ : 20);
     const gap = Math.max(25, Math.max(sx, sy, sz) * 0.45);
     const name = (modelOrDoc && (modelOrDoc.name || modelOrDoc.fileName)) || 'Part1';
 
@@ -775,8 +804,15 @@
       '0', 'ENDSEC',
       '0', 'SECTION', '2', 'ENTITIES'
     ];
+    const seenSegs = new Set();
     const addLine = (lyr, x1, y1, x2, y2) => {
+      if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) return;
       if (Math.hypot(x2 - x1, y2 - y1) < 1e-4) return;
+      const a1 = `${Math.round(x1 * 1e3)},${Math.round(y1 * 1e3)}`;
+      const a2 = `${Math.round(x2 * 1e3)},${Math.round(y2 * 1e3)}`;
+      const key = `${lyr}|${a1 < a2 ? a1 + '|' + a2 : a2 + '|' + a1}`;
+      if (seenSegs.has(key)) return;
+      seenSegs.add(key);
       out.push('0', 'LINE', '8', lyr, '10', x1.toFixed(3), '20', y1.toFixed(3), '11', x2.toFixed(3), '21', y2.toFixed(3));
     };
     const addText = (lyr, x, y, h, txt) => {
@@ -784,11 +820,11 @@
     };
 
     const views = [
-      { id: 'FRONT', ox: 0, oy: 0, proj: p => [p[0] - stats.bounds.minX, p[2] - stats.bounds.minZ] },
-      { id: 'TOP', ox: 0, oy: sz + gap, proj: p => [p[0] - stats.bounds.minX, p[1] - stats.bounds.minY] },
-      { id: 'RIGHT', ox: sx + gap, oy: 0, proj: p => [p[1] - stats.bounds.minY, p[2] - stats.bounds.minZ] },
+      { id: 'FRONT', ox: 0, oy: 0, proj: p => [p[0] - bMinX, p[2] - bMinZ] },
+      { id: 'TOP', ox: 0, oy: sz + gap, proj: p => [p[0] - bMinX, p[1] - bMinY] },
+      { id: 'RIGHT', ox: sx + gap, oy: 0, proj: p => [p[1] - bMinY, p[2] - bMinZ] },
       { id: 'ISO', ox: sx + gap, oy: sz + gap, proj: p => {
-        const x = p[0] - stats.bounds.minX, y = p[1] - stats.bounds.minY, z = p[2] - stats.bounds.minZ;
+        const x = p[0] - bMinX, y = p[1] - bMinY, z = p[2] - bMinZ;
         return [(x - y) * 0.866 + sy * 0.866, z + (x + y) * 0.5];
       }}
     ];
@@ -820,7 +856,9 @@
     addLine('TITLE_BLOCK', tbX + 110, tbY + 24, tbX, tbY + 24);
     addLine('TITLE_BLOCK', tbX, tbY + 24, tbX, tbY);
     addText('TITLE_BLOCK', tbX + 4, tbY + 14, 4.2, `KENSHO PRO 2D DRAWING: ${name}`);
-    addText('TITLE_BLOCK', tbX + 4, tbY + 5, 3.2, `VOL: ${stats.volumeCm3.toFixed(2)} cm3  |  MASS: ${stats.massGrams.toFixed(1)} g`);
+    const volCm3 = (stats && Number.isFinite(stats.volumeCm3)) ? stats.volumeCm3 : 0;
+    const massG = (stats && Number.isFinite(stats.massGrams)) ? stats.massGrams : (volCm3 * 2.70);
+    addText('TITLE_BLOCK', tbX + 4, tbY + 5, 3.2, `VOL: ${volCm3.toFixed(2)} cm3  |  MASS: ${massG.toFixed(1)} g`);
 
     out.push('0', 'ENDSEC', '0', 'EOF');
     return out.join('\n');

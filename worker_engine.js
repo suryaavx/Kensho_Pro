@@ -77,9 +77,19 @@
       const sz = Math.max(0, byteLen | 0);
       if (this.isNativeWasm && this.exports && sz > 0) {
         const ptr = this.exports.rust_mem_alloc(sz) >>> 0;
-        if (this.memory && this.memory.buffer && ptr + sz <= this.memory.buffer.byteLength) {
-          const slice = new Uint8Array(this.memory.buffer, ptr, sz);
-          return { ptr, byteLen: sz, slice, arena: this };
+        if (ptr > 0 && this.memory && this.memory.buffer && ptr + sz <= this.memory.buffer.byteLength) {
+          const arena = this;
+          return {
+            ptr,
+            byteLen: sz,
+            arena,
+            get slice() {
+              if (!arena.memory || !arena.memory.buffer || ptr + sz > arena.memory.buffer.byteLength) {
+                return new Uint8Array(0);
+              }
+              return new Uint8Array(arena.memory.buffer, ptr, sz);
+            }
+          };
         }
       }
       return { ptr: 0, byteLen: sz, slice: new Uint8Array(sz), arena: null };
@@ -530,6 +540,9 @@
         this._currentBytes = Math.max(0, this._currentBytes - old.bytes);
         if (this._budgetMgr) this._budgetMgr.recordDealloc(old.bytes);
         this._map.delete(key);
+        if (this._onEvict && old.value !== value) {
+          try { this._onEvict(key, old.value); } catch (e) {}
+        }
       }
 
       while (
@@ -555,6 +568,9 @@
       this._currentBytes = Math.max(0, this._currentBytes - entry.bytes);
       if (this._budgetMgr) this._budgetMgr.recordDealloc(entry.bytes);
       this._map.delete(key);
+      if (this._onEvict) {
+        try { this._onEvict(key, entry.value); } catch (e) {}
+      }
       return true;
     }
 
@@ -664,7 +680,19 @@
                   const res = (${this._syncDiff.toString().replace(/^_syncDiff/, 'function _syncDiff')})(payload);
                   self.postMessage({ id, status: 'ok', result: res }, [res.cls.buffer]);
                 } else if (type === 'PARSE_DXF') {
-                  self.postMessage({ id, status: 'ok', result: { parsed: true } });
+                  const text = typeof payload === 'string' ? payload : (payload && payload.text) || '';
+                  const lines = text.split(/\r?\n/);
+                  let insunitsCode = 0, layerCount = 0, entityCount = 0, section = '';
+                  for (let i = 0; i + 1 < lines.length; i += 2) {
+                    const code = lines[i].trim(), val = lines[i + 1].trim();
+                    if (code === '0' && val === 'SECTION') { section = (lines[i + 3] || '').trim().toUpperCase(); }
+                    else if (code === '0' && val === 'ENDSEC') { section = ''; }
+                    else if (section === 'HEADER' && code === '9' && val === '$INSUNITS') {
+                      if (i + 3 < lines.length && lines[i + 2].trim() === '70') insunitsCode = parseInt(lines[i + 3].trim(), 10) || 0;
+                    } else if (section === 'TABLES' && code === '0' && val === 'LAYER') { layerCount++; }
+                    else if (section === 'ENTITIES' && code === '0' && val !== 'ENDSEC' && val !== 'VERTEX' && val !== 'SEQEND') { entityCount++; }
+                  }
+                  self.postMessage({ id, status: 'ok', result: { parsed: true, insunitsCode, layerCount, entityCount } });
                 } else {
                   self.postMessage({ id, status: 'error', error: 'Unknown worker task type: ' + type });
                 }
@@ -698,21 +726,30 @@
               this.worker = bw;
               attachHandlers(bw, true);
               for (const [id, entry] of this.pending.entries()) {
-                try { bw.postMessage({ id, type: 'DIFF_PIXELS', payload: entry.payload }); }
+                const taskType = entry.type || 'DIFF_PIXELS';
+                try { bw.postMessage({ id, type: taskType, payload: entry.payload }); }
                 catch (err) {
                   this.pending.delete(id);
-                  entry.resolve(this._syncDiff(entry.payload));
+                  if (taskType === 'DIFF_PIXELS') entry.resolve(this._syncDiff(entry.payload));
+                  else entry.reject(err);
                 }
               }
               return;
             }
+          } else if (this._blobUrl && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+            try { URL.revokeObjectURL(this._blobUrl); } catch (e) {}
+            this._blobUrl = null;
           }
           const pendingEntries = Array.from(this.pending.values());
           this.pending.clear();
           this.worker = null;
           for (const entry of pendingEntries) {
             try {
-              entry.resolve(this._syncDiff(entry.payload));
+              if ((entry.type || 'DIFF_PIXELS') === 'DIFF_PIXELS') {
+                entry.resolve(this._syncDiff(entry.payload));
+              } else {
+                entry.reject(new Error('Worker terminated'));
+              }
             } catch (e) {
               entry.reject(e);
             }
@@ -756,7 +793,7 @@
 
       const id = ++this.msgId;
       return new Promise((resolve, reject) => {
-        this.pending.set(id, { resolve, reject, payload });
+        this.pending.set(id, { resolve, reject, payload, type: 'DIFF_PIXELS' });
         try {
           this.worker.postMessage({ id, type: 'DIFF_PIXELS', payload });
         } catch (err) {
@@ -1069,6 +1106,11 @@
         item.lastUsed = now;
         item.gen = this.generation;
         if (item.buffer) return item.buffer.asMutSlice();
+        const byteLen = Math.max(4, (width | 0) * (height | 0) * 4);
+        item.buffer = this.budgetMgr
+          ? this.budgetMgr.allocZeroizingU8(byteLen)
+          : ZeroizingBuffer.newZeroed(byteLen);
+        return item.buffer.asMutSlice();
       }
       this._pruneToCapacity(this.maxCachedTiles - 1);
       const byteLen = Math.max(4, (width | 0) * (height | 0) * 4);

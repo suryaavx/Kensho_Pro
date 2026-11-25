@@ -1,8 +1,10 @@
 {
-  "version": "1.2.3",
-  "releaseDate": "2026-11-20",
-  "downloadUrl": "https://kensho.textportdocx.in/KenshoPro-Setup-1.2.3.exe",
-  "linuxDownloadUrl": "https://kensho.textportdocx.in/KenshoPro-Portable-1.2.3-x86_64.AppImage",
+  "version": "1.2.3.2",
+  "channel": "Stable",
+  "buildVersion": "O1R0A7N5G0E002026A1232",
+  "releaseDate": "2026-11-24",
+  "downloadUrl": "https://kensho.textportdocx.in/KenshoPro-Setup-1.2.3.2.exe",
+  "linuxDownloadUrl": "https://kensho.textportdocx.in/KenshoPro-Portable-1.2.3.2-x86_64.AppImage",
   "websiteUrl": "https://kensho.textportdocx.in",
-  "notes": "Kensho Pro 1.2.3 \u2014 CAD Studio & Native SolidWorks/STEP 3D Parametric Backend, Always-On Live AutoCAD Vector DXF Compare, CAM G74/G75 Trace-Bend Arc Fix, and Native Logo Splash Screen."
+  "notes": "Kensho Pro 1.2.3.2 Stable (Build O1R0A7N5G0E002026A1232) \u2014 Fast-Open PDF Optimization, Ultra-HD Single-Word PDF Vector Zoom (#ehq), Real STEP AP214/AP242 Colors, OpenGL GPU + VBO/FPS HUD, and 3D Right-Click Menu."
 }

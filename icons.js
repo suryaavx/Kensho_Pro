@@ -28,6 +28,7 @@ const IC = {
   bold: '<path d="M7 5h6.5a3.5 3.5 0 0 1 0 7H7V5z" fill="currentColor" fill-opacity="0.15"/><path d="M7 12h7.5a3.5 3.5 0 0 1 0 7H7v-7z"/>',
   italic: '<path d="M10 5h6M8 19h6M13.5 5l-3 14"/>',
   box: '<rect x="4" y="5" width="16" height="14" rx="1.5" fill="currentColor" fill-opacity="0.16"/><rect x="3" y="4" width="2.5" height="2.5" rx="0.5"/><rect x="18.5" y="4" width="2.5" height="2.5" rx="0.5"/><rect x="3" y="17.5" width="2.5" height="2.5" rx="0.5"/><rect x="18.5" y="17.5" width="2.5" height="2.5" rx="0.5"/>',
+  triangle: '<path d="M12 4.2L20.2 19H3.8L12 4.2z" fill="currentColor" fill-opacity="0.16"/><circle cx="12" cy="4.2" r="1.4" fill="currentColor"/><circle cx="3.8" cy="19" r="1.4" fill="currentColor"/><circle cx="20.2" cy="19" r="1.4" fill="currentColor"/>',
   line: '<path d="M5.5 18.5L18.5 5.5"/><circle cx="5" cy="19" r="2.2" fill="currentColor" fill-opacity="0.25"/><circle cx="19" cy="5" r="2.2" fill="currentColor" fill-opacity="0.25"/>',
   arrow: '<path d="M5 19L19 5"/><path d="M10 5h9v9"/><circle cx="5" cy="19" r="2" fill="currentColor" fill-opacity="0.25"/>',
   pen: '<path d="M12 20h9"/><path d="M16.2 3.8a2.2 2.2 0 0 1 3.1 3.1L7.5 18.8 3.5 20l1.2-4L16.2 3.8z" fill="currentColor" fill-opacity="0.16"/><path d="M14 6l3 3"/>',

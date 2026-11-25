@@ -41,6 +41,7 @@
       ent.x2 = +bx.toFixed(4);
       ent.y2 = +by.toFixed(4);
       ent._cachedBBox = null;
+      ent._bbox = null;
       const secondLine = {
         ...ent,
         _id: 'ent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
@@ -48,7 +49,8 @@
         y1: +by.toFixed(4),
         x2: origX2,
         y2: origY2,
-        _cachedBBox: null
+        _cachedBBox: null,
+        _bbox: null
       };
       parser.entities.splice(idx + 1, 0, secondLine);
       return { ok: true, created: secondLine, splitPoint: { x: bx, y: by } };
@@ -69,12 +71,14 @@
       ent.startAngle = +(sAng % 360).toFixed(2);
       ent.endAngle = splitMod;
       ent._cachedBBox = null;
+      ent._bbox = null;
       const secondArc = {
         ...ent,
         _id: 'ent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
         startAngle: splitMod,
         endAngle: origEnd,
-        _cachedBBox: null
+        _cachedBBox: null,
+        _bbox: null
       };
       parser.entities.splice(idx + 1, 0, secondArc);
       return { ok: true, created: secondArc, splitAngle: splitMod };
@@ -88,13 +92,15 @@
       ent.startAngle = +clickAng.toFixed(2);
       ent.endAngle = +oppositeAng.toFixed(2);
       ent._cachedBBox = null;
+      ent._bbox = null;
       const secondHalf = {
         ...ent,
         _id: 'ent_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
         type: 'ARC',
         startAngle: +oppositeAng.toFixed(2),
         endAngle: +clickAng.toFixed(2),
-        _cachedBBox: null
+        _cachedBBox: null,
+        _bbox: null
       };
       parser.entities.splice(idx + 1, 0, secondHalf);
       return { ok: true, created: secondHalf, splitAngle: clickAng };
@@ -121,6 +127,7 @@
       ent.x2 = +(ent.x2 + ux * deltaDist).toFixed(4);
       ent.y2 = +(ent.y2 + uy * deltaDist).toFixed(4);
       ent._cachedBBox = null;
+      ent._bbox = null;
       return true;
     }
     if (ent.type === 'ARC' && (ent.r || 0) > 1e-4) {
@@ -132,6 +139,7 @@
       const newSweep = Math.max(1.0, Math.min(359.5, sweep + dAng));
       ent.endAngle = +(((sAng + newSweep) % 360 + 360) % 360).toFixed(2);
       ent._cachedBBox = null;
+      ent._bbox = null;
       return true;
     }
     if (ent.type === 'LWPOLYLINE' && !ent.closed && Array.isArray(ent.points) && ent.points.length >= 2) {
@@ -147,6 +155,7 @@
       pLast[1] = +(pLast[1] + uy * deltaDist).toFixed(4);
       delete ent.renderPoints;
       ent._cachedBBox = null;
+      ent._bbox = null;
       return true;
     }
     return false;
@@ -195,6 +204,15 @@
     const removedDegenerate = beforeEnts - parser.entities.length;
 
     const usedLayers = new Set(parser.entities.map(e => e.layer || '0'));
+    if (parser.blocks && typeof parser.blocks === 'object') {
+      for (const blk of Object.values(parser.blocks)) {
+        if (blk && Array.isArray(blk.entities)) {
+          for (const be of blk.entities) {
+            if (be && be.layer) usedLayers.add(be.layer);
+          }
+        }
+      }
+    }
     let purgedLayers = 0;
     if (parser.layers && typeof parser.layers === 'object') {
       for (const lName of Object.keys(parser.layers)) {

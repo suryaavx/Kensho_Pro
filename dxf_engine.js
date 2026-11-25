@@ -1052,9 +1052,12 @@
         const rw = r.w * dpiScale;
         const rh = r.h * dpiScale;
         const ry = pageHeight - (r.y * dpiScale + rh);
-        const col = r.type === 'added' ? ACI.GREEN : (r.type === 'removed' ? ACI.RED : ACI.YELLOW);
+        const isAdd = r.type === 'added' || r.kind === 'a';
+        const isRem = r.type === 'removed' || r.kind === 'r';
+        const diffLabel = isAdd ? 'ADDED' : (isRem ? 'REMOVED' : 'CHANGED');
+        const col = isAdd ? ACI.GREEN : (isRem ? ACI.RED : ACI.YELLOW);
         if (options.scallopedDiffs !== false) {
-          writer.addRevisionCloud(rx, ry, rw, rh, `#${r.id || ''} ${(r.type || 'DIFF').toUpperCase()}`, 'REDLINE_DIFFS', col);
+          writer.addRevisionCloud(rx, ry, rw, rh, `#${r.id || ''} ${diffLabel}`, 'REDLINE_DIFFS', col);
         } else {
           writer.addRect(rx, ry, rw, rh, 'REDLINE_DIFFS', col);
         }
@@ -1137,13 +1140,19 @@
       }
     }
 
+    // Compute PDF-to-DXF (Y-up, 0-based, /Rotate & CropBox-aware) base CTM from viewport.transform
+    const vt = (viewport && Array.isArray(viewport.transform) && viewport.transform.length === 6)
+      ? viewport.transform
+      : [1, 0, 0, -1, 0, pageHeight];
+    const baseCTM = [vt[0], -vt[1], vt[2], -vt[3], vt[4], pageHeight - vt[5]];
+
     if (options.includeText !== false) {
       try {
         const textContent = await page.getTextContent();
         if (textContent && textContent.items) {
           for (const item of textContent.items) {
             if (!item.str || !item.str.trim()) continue;
-            const tr = item.transform;
+            const tr = multiplyMatrix(baseCTM, item.transform);
             const x = tr[4];
             const y = tr[5];
             const fontSize = Math.sqrt(tr[0] * tr[0] + tr[1] * tr[1]) || 10;
@@ -1183,10 +1192,11 @@
         constructPath: 91
       };
 
-      const ctmStack = [identityMatrix()];
-      let currentCTM = identityMatrix();
+      const ctmStack = [[...baseCTM]];
+      let currentCTM = [...baseCTM];
       let currentPath = [];
       let currentPoint = [0, 0];
+      let subpathStart = [0, 0];
 
       for (let i = 0; i < fnArray.length; i++) {
         const fn = fnArray[i];
@@ -1204,6 +1214,7 @@
         } else if (fn === OPS.moveTo) {
           const pt = transformPoint(currentCTM, args[0], args[1]);
           currentPoint = pt;
+          subpathStart = pt;
           currentPath.push({ op: 'move', pt });
         } else if (fn === OPS.lineTo) {
           const pt = transformPoint(currentCTM, args[0], args[1]);
@@ -1227,6 +1238,7 @@
           currentPath.push({ op: 'curve', pt0: currentPoint, cp1, cp2: endPt, endPt });
           currentPoint = endPt;
         } else if (fn === OPS.closePath) {
+          currentPoint = subpathStart;
           currentPath.push({ op: 'close' });
         } else if (fn === OPS.rectangle) {
           const [rx, ry, rw, rh] = args;
@@ -1234,9 +1246,10 @@
           const p2 = transformPoint(currentCTM, rx + rw, ry);
           const p3 = transformPoint(currentCTM, rx + rw, ry + rh);
           const p4 = transformPoint(currentCTM, rx, ry + rh);
-          const isBorder = (Math.abs(rw - pageWidth) < 10 && Math.abs(rh - pageHeight) < 10);
-          const lyr = isBorder ? 'SHEET_BORDER' : 'GEOMETRY';
-          writer.addPolyline([p1, p2, p3, p4], true, lyr);
+          const isBorder = (Math.abs(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) - pageWidth) < 10 && Math.abs(Math.hypot(p4[0] - p1[0], p4[1] - p1[1]) - pageHeight) < 10);
+          subpathStart = p1;
+          currentPoint = p1;
+          currentPath.push({ op: 'rect', pts: [p1, p2, p3, p4], isBorder });
         } else if (fn === OPS.constructPath) {
           const pathOps = args[0];
           const coords = args[1];
@@ -1275,6 +1288,7 @@
               currentPath.push({ op: 'curve', pt0: currentPoint, cp1, cp2: endPt, endPt });
               currentPoint = endPt;
             } else if (pathOp === OPS.closePath) {
+              currentPoint = subpathStart;
               currentPath.push({ op: 'close' });
             } else if (pathOp === OPS.rectangle) {
               const rx = coords[coordIdx];
@@ -1286,8 +1300,10 @@
               const p2 = transformPoint(currentCTM, rx + rw, ry);
               const p3 = transformPoint(currentCTM, rx + rw, ry + rh);
               const p4 = transformPoint(currentCTM, rx, ry + rh);
-              const isBorder = (Math.abs(rw - pageWidth) < 10 && Math.abs(rh - pageHeight) < 10);
-              writer.addPolyline([p1, p2, p3, p4], true, isBorder ? 'SHEET_BORDER' : 'GEOMETRY');
+              const isBorder = (Math.abs(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) - pageWidth) < 10 && Math.abs(Math.hypot(p4[0] - p1[0], p4[1] - p1[1]) - pageHeight) < 10);
+              subpathStart = p1;
+              currentPoint = p1;
+              currentPath.push({ op: 'rect', pts: [p1, p2, p3, p4], isBorder });
             }
           }
         } else if (fn === OPS.endPath) {
@@ -1304,6 +1320,12 @@
                   writer.addPolyline(polyline, false, 'GEOMETRY');
                 }
                 polyline = [seg.pt];
+              } else if (seg.op === 'rect') {
+                if (polyline.length > 1) {
+                  writer.addPolyline(polyline, false, 'GEOMETRY');
+                  polyline = [];
+                }
+                writer.addPolyline(seg.pts, true, seg.isBorder ? 'SHEET_BORDER' : 'GEOMETRY');
               } else if (seg.op === 'line') {
                 if (!polyline.length) polyline.push(seg.pt0);
                 polyline.push(seg.pt1);
@@ -1314,8 +1336,8 @@
                   polyline.push(curvedPts[k]);
                 }
               } else if (seg.op === 'close') {
-                if (polyline.length > 2) {
-                  writer.addPolyline(polyline, true, 'GEOMETRY');
+                if (polyline.length >= 2) {
+                  writer.addPolyline(polyline, polyline.length > 2, 'GEOMETRY');
                   polyline = [];
                 }
               }
@@ -1676,21 +1698,39 @@
           let polyClosed = true;
           let edgeMode = 0; // 1=line, 2=circular arc
           let eX1 = null, eY1 = null, eX2 = null, eY2 = null, eR = null, eA1 = 0, eA2 = 360, eCCW = 1;
+          const pathPts = [];
+          const appendEdgePts = (pts) => {
+            for (let pi = 0; pi < pts.length; pi++) {
+              const pt = pts[pi];
+              if (pathPts.length > 0) {
+                const prev = pathPts[pathPts.length - 1];
+                if (Math.hypot(pt[0] - prev[0], pt[1] - prev[1]) < 1e-6) continue;
+              }
+              pathPts.push(pt);
+            }
+          };
           const flushEdge = () => {
             if (edgeMode === 1 && eX1 != null && eY1 != null && eX2 != null && eY2 != null) {
-              segments.push([[eX1, eY1], [eX2, eY2]]);
+              appendEdgePts([[eX1, eY1], [eX2, eY2]]);
             } else if (edgeMode === 2 && eX1 != null && eY1 != null && eR > 0) {
               const arcLoop = [];
-              let sA = eA1 || 0, endA = eA2 != null ? eA2 : 360;
-              if (!eCCW) { sA = 360 - sA; endA = 360 - endA; }
-              if (endA <= sA) endA += 360;
-              const sweep = endA - sA;
+              const sA = Number.isFinite(eA1) ? eA1 : 0;
+              const endA = Number.isFinite(eA2) ? eA2 : 360;
+              let sweep;
+              if (eCCW) {
+                sweep = ((endA - sA) % 360 + 360) % 360;
+                if (sweep < 1e-6) sweep = 360;
+              } else {
+                sweep = ((sA - endA) % 360 + 360) % 360;
+                if (sweep < 1e-6) sweep = 360;
+              }
               const steps = Math.max(8, Math.min(36, Math.ceil(sweep / 8)));
               for (let s = 0; s <= steps; s++) {
-                const rad = ((sA + (sweep * s) / steps) * Math.PI) / 180;
+                const deg = eCCW ? (sA + (sweep * s) / steps) : (sA - (sweep * s) / steps);
+                const rad = (deg * Math.PI) / 180;
                 arcLoop.push([eX1 + eR * Math.cos(rad), eY1 + eR * Math.sin(rad)]);
               }
-              if (arcLoop.length >= 2) segments.push(arcLoop);
+              if (arcLoop.length >= 2) appendEdgePts(arcLoop);
             }
             eX1 = eY1 = eX2 = eY2 = eR = null;
             eA1 = 0; eA2 = 360; eCCW = 1;
@@ -1729,13 +1769,22 @@
               } else if (c === 11) eX2 = parseFloat(v);
               else if (c === 21) eY2 = parseFloat(v);
               else if (c === 40 && edgeMode === 2) eR = parseFloat(v);
-              else if (c === 50 && edgeMode === 2) eA1 = parseFloat(v) || 0;
-              else if (c === 51 && edgeMode === 2) eA2 = parseFloat(v) || 360;
+              else if (c === 50 && edgeMode === 2) { const n = parseFloat(v); eA1 = Number.isFinite(n) ? n : 0; }
+              else if (c === 51 && edgeMode === 2) { const n = parseFloat(v); eA2 = Number.isFinite(n) ? n : 360; }
               else if (c === 73 && edgeMode === 2) eCCW = parseInt(v, 10) || 0;
             }
             j++;
           }
           flushEdge();
+          if (pathPts.length >= 2) {
+            if (pathPts.length >= 3) {
+              const first = pathPts[0], last = pathPts[pathPts.length - 1];
+              if (Math.hypot(first[0] - last[0], first[1] - last[1]) > 1e-6) {
+                pathPts.push([first[0], first[1]]);
+              }
+            }
+            segments.push(pathPts);
+          }
           if (curPt) loopPts.push(curPt);
           if (loopPts.length > 1 && (numEdges >= 2 || isPolylinePath)) {
             const tessLoop = [];
@@ -1973,8 +2022,8 @@
       if (updateGlobalBounds) lyrInfo.count++;
 
       if (entType === 'LINE' || entType === 'RAY' || entType === 'XLINE') {
-        let x1 = entData.x * flipX, y1 = entData.y;
-        let x2 = entData.x2 * flipX, y2 = entData.y2;
+        let x1 = entData.x, y1 = entData.y;
+        let x2 = entData.x2, y2 = entData.y2;
         if (entType === 'RAY' || entType === 'XLINE') {
           // For RAY / XLINE, (11, 21) is a direction vector from base point (10, 20)
           const dLen = Math.hypot(entData.x2, entData.y2) || 1;
@@ -3308,6 +3357,17 @@
       out(0, 'ENDTAB');
       out(0, 'ENDSEC');
 
+      // Sync edited DIMENSION text into anonymous *D blocks before writing BLOCKS section
+      for (const ent of this.entities) {
+        if (ent && ent.type === 'DIMENSION' && ent._textEdited && ent.blockName) {
+          const dBlk = this._getBlock(ent.blockName);
+          if (dBlk && Array.isArray(dBlk.entities)) {
+            const tSub = dBlk.entities.find(se => se && (se.type === 'TEXT' || se.type === 'MTEXT'));
+            if (tSub) tSub.text = ent.text || '';
+          }
+        }
+      }
+
       // 3. BLOCKS SECTION
       out(0, 'SECTION');
       out(2, 'BLOCKS');
@@ -3401,19 +3461,19 @@
         if (ent.isSpline || ent.type === 'SPLINE') {
           writeCommon('SPLINE');
           out(70, ent.closed ? 1 : 0);
-          out(71, 3);
           const isFit = !!ent._isFitSpline;
+          const nPts = ent.points.length;
+          const deg = isFit ? 3 : Math.min(3, Math.max(1, nPts - 1));
+          out(71, deg);
           if (isFit) {
-            out(74, ent.points.length);
-            for (let i = 0; i < ent.points.length; i++) {
+            out(74, nPts);
+            for (let i = 0; i < nPts; i++) {
               const pt = ent.points[i];
               out(11, (pt[0] || 0).toFixed(6));
               out(21, (pt[1] || 0).toFixed(6));
               out(31, '0.0');
             }
           } else {
-            const nPts = ent.points.length;
-            const deg = Math.min(3, Math.max(1, nPts - 1));
             const nKnots = nPts + deg + 1;
             out(72, nKnots);
             out(73, nPts);
@@ -3547,10 +3607,11 @@
       const lyrName = String(ent.layer || '').toUpperCase();
       if (/DIM|CENTER|HATCH|GRID|AXIS|HIDDEN|PHANTOM|GUIDE|ANNOT|TEXT/.test(lyrName)) return 0.72;
       if (ltype && ltype !== 'CONTINUOUS' && !ltype.includes('BYLAYER')) return 0.76;
-      const lwCode = ent.lineweight != null ? ent.lineweight : (lyrObj ? lyrObj.lineweight : -3);
-      if (lwCode != null && lwCode >= 0) {
+      const lwCode = (ent.lineweight != null && ent.lineweight > 0) ? ent.lineweight : (lyrObj ? lyrObj.lineweight : -3);
+      if (lwCode != null && lwCode > 0) {
         if (lwCode <= 13) return 0.68;
-        if (lwCode >= 50) return 1.25;
+        if (lwCode <= 25) return 1.0;
+        return Math.min(4.5, Math.max(1.0, lwCode / 25));
       }
       return 1.0;
     }
@@ -4304,19 +4365,31 @@
           const p1 = mapPt(ent.x1, ent.y1), p2 = mapPt(ent.x2, ent.y2);
           drawSegs([p1, p2], false, entLw, colRgb, dashArray);
         } else if (ent.type === 'CIRCLE') {
-          const [cx, cy] = mapPt(ent.cx, ent.cy);
-          if (!isFinite(cx) || !isFinite(cy)) return;
-          const rScale = parentTransform ? Math.abs(parentTransform.sx) : 1;
-          const radPt = Math.max(0.2, (ent.r || 0) * scale * 0.5 * rScale);
-          if (!isFinite(radPt)) return;
-          page.drawCircle({
-            x: cx,
-            y: cy,
-            size: radPt,
-            borderColor: colRgb,
-            borderWidth: entLw,
-            ...(dashArray ? { borderDashArray: dashArray } : {})
-          });
+          const nonUniform = parentTransform && Math.abs(Math.abs(parentTransform.sx || 1) - Math.abs(parentTransform.sy || 1)) > 1e-4;
+          if (nonUniform) {
+            const steps = 48;
+            const cPts = [];
+            const r = ent.r || 0;
+            for (let s = 0; s < steps; s++) {
+              const ang = (s * 2 * Math.PI) / steps;
+              cPts.push(mapPt(ent.cx + r * Math.cos(ang), ent.cy + r * Math.sin(ang)));
+            }
+            drawSegs(cPts, true, entLw, colRgb, dashArray);
+          } else {
+            const [cx, cy] = mapPt(ent.cx, ent.cy);
+            if (!isFinite(cx) || !isFinite(cy)) return;
+            const rScale = parentTransform ? Math.abs(parentTransform.sx) : 1;
+            const radPt = Math.max(0.2, (ent.r || 0) * scale * 0.5 * rScale);
+            if (!isFinite(radPt)) return;
+            page.drawCircle({
+              x: cx,
+              y: cy,
+              size: radPt,
+              borderColor: colRgb,
+              borderWidth: entLw,
+              ...(dashArray ? { borderDashArray: dashArray } : {})
+            });
+          }
         } else if (ent.type === 'ARC') {
           const sAng = ent.startAngle || 0;
           let eAng = ent.endAngle != null ? ent.endAngle : 360;
@@ -4363,7 +4436,11 @@
           for (const lp of ent.loops) {
             if (!lp || lp.length < 2) continue;
             const pts = lp.map(p => mapPt(p[0], p[1]));
-            drawSegs(pts, false, entLw, colRgb);
+            if (ent.solid && pts.length >= 3) {
+              drawFilledPolygon(pts, colRgb, entLw);
+            } else {
+              drawSegs(pts, true, entLw, colRgb);
+            }
           }
         } else if (ent.type === 'SOLID' && ent.points && ent.points.length >= 3) {
           const pts = ent.points.map(p => mapPt(p[0], p[1]));
@@ -4437,7 +4514,8 @@
           const rawH = ent.height > 0 ? ent.height : (bw * 0.01);
           // Strict proportional font scaling (no artificial 5pt floor that causes CAD labels to overlap!)
           const fontSize = Math.max(0.65, Math.min(48, rawH * blkScaleY * scale * 0.5));
-          const rotDeg = (ent.rotation || 0) + (parentTransform ? (parentTransform.rotDeg || 0) : 0);
+          const txtMirrorFlip = (parentTransform && ((parentTransform.sx || 1) * (parentTransform.sy || 1) < 0)) ? -1 : 1;
+          const rotDeg = (ent.rotation || 0) * txtMirrorFlip + (parentTransform ? (parentTransform.rotDeg || 0) : 0);
           const wf = (ent.widthFactor || 0.86) * (blkScaleX / Math.max(1e-4, blkScaleY));
           const fitWidthPt = ent.fitWidth > 0 ? (ent.fitWidth * blkScaleX * scale * 0.5) : 0;
           await drawPdfTextBlock(
@@ -4875,15 +4953,15 @@
 
     const scaleAndOffsetEnt = (e, k, dx = 0, dy = 0) => {
       if (k === 1.0 && dx === 0 && dy === 0) return e;
-      const c = { ...e, _cachedBBox: null, _normEnt: undefined };
+      const c = { ...e, _cachedBBox: null, _bbox: null, _normEnt: undefined };
       delete c._normEnt;
-      for (const f of ['x', 'x1', 'x2', 'cx', 'textX']) {
+      for (const f of ['x', 'x1', 'x2', 'cx', 'textX', 'defX']) {
         if (typeof c[f] === 'number') c[f] = c[f] * k + dx;
       }
-      for (const f of ['y', 'y1', 'y2', 'cy', 'textY']) {
+      for (const f of ['y', 'y1', 'y2', 'cy', 'textY', 'defY']) {
         if (typeof c[f] === 'number') c[f] = c[f] * k + dy;
       }
-      for (const f of ['r', 'rx', 'ry', 'height', 'boxWidth', 'fitWidth', 'mx', 'my']) {
+      for (const f of ['r', 'rx', 'ry', 'height', 'boxWidth', 'fitWidth', 'mx', 'my', 'measurement']) {
         if (typeof c[f] === 'number') c[f] = c[f] * k;
       }
       if (Array.isArray(c.points)) c.points = c.points.map(p => [p[0] * k + dx, p[1] * k + dy, p[2] || 0]);

@@ -247,8 +247,9 @@ function diffPixelsWorker({
       const type = cls[idx];
       if ((type === 1 || type === 2) && !visited[idx]) {
         let minX = x, maxX = x, minY = y, maxY = y;
-        let pixelCount = 0;
+        let pixelCount = 0, cntRem = 0, cntAdd = 0;
         let sp = 0;
+        const compPixels = [];
         stack[sp++] = idx;
         visited[idx] = 1;
 
@@ -257,6 +258,9 @@ function diffPixelsWorker({
           const cy = (curIdx / W) | 0;
           const cx = curIdx - cy * W;
           pixelCount++;
+          if (cls[curIdx] === 1) cntRem++;
+          else if (cls[curIdx] === 2) cntAdd++;
+          if (pixelCount <= minpx) compPixels.push(curIdx);
 
           if (cx < minX) minX = cx;
           if (cx > maxX) maxX = cx;
@@ -272,7 +276,7 @@ function diffPixelsWorker({
               const nx = cx + dx;
               if (nx < 0 || nx >= W) continue;
               const nIdx = nRow + nx;
-              if (!visited[nIdx] && cls[nIdx] === type) {
+              if (!visited[nIdx] && (cls[nIdx] === 1 || cls[nIdx] === 2)) {
                 visited[nIdx] = 1;
                 stack[sp++] = nIdx;
               }
@@ -281,15 +285,21 @@ function diffPixelsWorker({
         }
 
         if (pixelCount >= minpx) {
+          const isChanged = cntRem > 0 && cntAdd > 0 && Math.min(cntRem, cntAdd) >= 0.15 * Math.max(cntRem, cntAdd);
+          const kind = isChanged ? 'c' : (cntRem >= cntAdd ? 'r' : 'a');
+          const rType = isChanged ? 'changed' : (cntRem >= cntAdd ? 'removed' : 'added');
           regions.push({
-            type: type === 1 ? 'removed' : 'added',
-            kind: type === 1 ? 'r' : 'a',
+            type: rType,
+            kind,
             x: minX,
             y: minY,
             w: maxX - minX + 1,
             h: maxY - minY + 1,
             pixelCount
           });
+        } else {
+          // Zero out rejected sub-minpx noise speckles so cls matches reported diff regions
+          for (let ci = 0; ci < compPixels.length; ci++) cls[compPixels[ci]] = 0;
         }
       }
     }

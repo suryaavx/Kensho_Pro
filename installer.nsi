@@ -1,7 +1,8 @@
 Unicode true
 !define APPNAME "Kensho Pro"
 !define APPEXE "Kensho Pro.exe"
-!define VERSION "1.2.3"
+!define VERSION "1.2.3.2"
+!define BUILD_VERSION "O1R0A7N5G0E002026A1232"
 !define PUBLISHER "Kensho Studio"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\KenshoPro"
 !define LEGACY_UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\RedlinePro"
@@ -16,7 +17,7 @@ Unicode true
   !define LIC "LICENSE.txt"
 !endif
 !ifndef OUT
-  !define OUT "dist\KenshoPro-Setup-1.2.3.exe"
+  !define OUT "dist\KenshoPro-Setup-1.2.3.2.exe"
 !endif
 
 !include "MUI2.nsh"
@@ -61,14 +62,14 @@ BrandingText "Kensho Studio - textportdocx.in"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
-VIProductVersion "1.2.3.0"
-VIFileVersion "1.2.3.0"
+VIProductVersion "1.2.3.2"
+VIFileVersion "1.2.3.2"
 VIAddVersionKey "ProductName" "${APPNAME} Setup"
 VIAddVersionKey "CompanyName" "${PUBLISHER}"
 VIAddVersionKey "LegalCopyright" "Kensho Studio - textportdocx.in"
 VIAddVersionKey "FileDescription" "${APPNAME} ${VERSION} Installer"
 VIAddVersionKey "FileVersion" "${VERSION}"
-VIAddVersionKey "ProductVersion" "${VERSION}"
+VIAddVersionKey "ProductVersion" "${VERSION} (${BUILD_VERSION})"
 
 Section "Install"
   SetShellVarContext current
@@ -126,6 +127,17 @@ Section "Install"
   WriteRegStr HKCU "Software\Classes\.ipc\OpenWithList\${APPEXE}" "" ""
   WriteRegStr HKCU "Software\Classes\.kensho\OpenWithList\${APPEXE}" "" ""
   WriteRegStr HKCU "Software\Classes\.redline\OpenWithList\${APPEXE}" "" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".dwg" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".step" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".stp" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".sldprt" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".sldasm" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".stl" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".obj" ""
+  WriteRegStr HKCU "Software\Classes\Applications\${APPEXE}\SupportedTypes" ".kensho3d" ""
+  WriteRegStr HKCU "Software\Classes\.step\OpenWithList\${APPEXE}" "" ""
+  WriteRegStr HKCU "Software\Classes\.stp\OpenWithList\${APPEXE}" "" ""
+  WriteRegStr HKCU "Software\Classes\.kensho3d\OpenWithList\${APPEXE}" "" ""
 
   ; Explorer right-click on any PDF: "Edit with Kensho Pro" and "Compare with Kensho Pro" (select 2 PDFs)
   WriteRegStr HKCU "Software\Classes\SystemFileAssociations\.pdf\shell\KenshoEdit" "" "Edit with Kensho Pro"
@@ -169,6 +181,9 @@ Section "Uninstall"
   DeleteRegKey HKCU "Software\Classes\.ipc\OpenWithList\${APPEXE}"
   DeleteRegKey HKCU "Software\Classes\.kensho\OpenWithList\${APPEXE}"
   DeleteRegKey HKCU "Software\Classes\.redline\OpenWithList\${APPEXE}"
+  DeleteRegKey HKCU "Software\Classes\.step\OpenWithList\${APPEXE}"
+  DeleteRegKey HKCU "Software\Classes\.stp\OpenWithList\${APPEXE}"
+  DeleteRegKey HKCU "Software\Classes\.kensho3d\OpenWithList\${APPEXE}"
   DeleteRegKey HKCU "Software\Classes\SystemFileAssociations\.pdf\shell\KenshoEdit"
   DeleteRegKey HKCU "Software\Classes\SystemFileAssociations\.pdf\shell\KenshoCompare"
   DeleteRegKey HKCU "Software\Classes\SystemFileAssociations\.dxf\shell\KenshoInspectCAD"

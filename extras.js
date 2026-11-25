@@ -48,7 +48,9 @@ T.rollbackOpen = () => {
 T.switchTo = async i => {
   if (i === T.cur || !T.list[i]) return;
   if (T.cur >= 0 && T.list[T.cur]) T.list[T.cur] = snap();
-  Object.assign(E, T.list[i]); T.cur = i;
+  Object.assign(E, T.list[i]);
+  E.hist = []; E.redo = []; E.annUndo = []; E.annRedo = [];
+  T.cur = i;
   window.busy(true);
   try { await RE.reload(false); window.editorShown && window.editorShown(); window.updateTitle && window.updateTitle(); }
   catch (e) { est('Could not show that tab: ' + e.message); }
@@ -82,6 +84,7 @@ T.close = async i => {
       stack: [], hist: [], redo: [], comments: [],
       name: 'document.pdf', path: null, savedBytes: null
     });
+    if (E.faiManager && typeof E.faiManager.clear === 'function') E.faiManager.clear();
     if ($('#thumbs')) $('#thumbs').querySelectorAll('canvas').forEach(cv => { cv.width = 0; cv.height = 0; });
     $('#ewrap').hidden = true; if ($('#rp-pdf-ruler')) $('#rp-pdf-ruler').hidden = true; $('#eempty').hidden = false; $('#thumbs').innerHTML = ''; $('#eN').textContent = '0'; $('#esz').textContent = '';
     if ($('#e-floating-hud')) $('#e-floating-hud').hidden = true;
@@ -111,7 +114,7 @@ T.render = () => {
     bar.append(d);
   });
 };
-setInterval(T.render, 900);
+setInterval(() => { if (!document.hidden && ED()) T.render(); }, 1200);
 window.TABS = T;
 const curDirty = window.isDirty;
 window.isDirty = () => curDirty() || T.list.some((t, i) => i !== T.cur && dirtyOf(t));
@@ -296,7 +299,7 @@ if (window.native.recWrite) {
 // ---------------------------------------------------------------- file changed by another program
 const mt = new Map(); let asking = false;
 setInterval(async () => {
-  if (asking || !E.path || !window.native.mtime) return;
+  if (document.hidden || asking || !E.path || !window.native.mtime) return;
   const m = await window.native.mtime(E.path); if (!m) return;
   const key = E.path, old = mt.get(key);
   if (old == null || E.bytes === E.savedBytes && E.__mtBytes !== E.bytes) {
@@ -312,7 +315,7 @@ setInterval(async () => {
 
 // ---------------------------------------------------------------- editable copy of a password PDF
 setInterval(async () => {
-  if (!window.__unlocked || !ED() || !E.doc) return; window.__unlocked = false;
+  if (document.hidden || !window.__unlocked || !ED() || !E.doc) return; window.__unlocked = false;
   let locked = false; try { await PDFLib.PDFDocument.load(E.bytes); } catch (e) { locked = /encrypt/i.test(e.message || ''); }
   if (!locked) return;
   const r = await RE.dialog('Make an editable copy?', [{ type: 'note', label: 'This PDF is encrypted. You can view, find, print and compare it, but saving edits needs an unlocked copy. The copy keeps every page exactly as it looks, but pages become images (text is no longer selectable).' },

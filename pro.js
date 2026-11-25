@@ -1,4 +1,4 @@
-// ===== Kensho Pro 1.2.3 — Kensho Studio (textportdocx.in) =====
+// ===== Kensho Pro 1.2.3.2 — Kensho Studio (textportdocx.in) =====
 (function () {
   const $ = s => document.querySelector(s), DPR = () => window.devicePixelRatio || 1, S = window.CMP;
   const el = (t, a, h) => { const e = document.createElement(t); Object.assign(e, a || {}); if (h != null) e.innerHTML = h; return e; };
@@ -7,20 +7,20 @@
   const safeRemove = k => { try { localStorage.removeItem(k); } catch (e) {} };
 
   // In-App End-User License Agreement (EULA) & Zero-Telemetry Guarantee Modal
-  const FULL_EULA_TEXT = 'KENSHO PRO - END-USER LICENSE AGREEMENT (EULA)\nVersion 1.2.3  |  Publisher: Kensho Studio  |  Website: textportdocx.in\n\nPLEASE READ THIS AGREEMENT BEFORE INSTALLING OR USING KENSHO PRO.\nBy clicking "I accept the terms of the License Agreement", "I Agree",\ninstalling, copying or using Kensho Pro (the "Software"), you agree to\nthis End-User License Agreement ("Agreement"). If you do not agree, do\nnot install or use the Software and delete any copy in your possession.\nIf you use the Software on behalf of an organization, you confirm that\nyou are authorized to accept this Agreement for it; "you" then includes\nthat organization.\n\n1. DEFINITIONS\n"Publisher", "we" or "us" means Kensho Studio. "Output" means reports,\nmarkups, comparisons, exports or other materials you create using the\nSoftware. "Third-Party Components" means software distributed with or used\nby the Software that is subject to a separate license.\n\n2. LICENSE GRANT AND COST\nSubject to this Agreement, the Publisher grants you a free, non-exclusive,\nworldwide, perpetual, royalty-free license to install and use the Software\non computers you own or control, for personal, educational and commercial\nengineering, CAD, CAM, architectural, and quality-assurance work. There\nare no license fees, subscriptions or account requirements for the license\ngranted here. This license is for use of the Software and does not transfer\nownership of the Software or its intellectual property to you.\n\n3. PERMITTED USE AND YOUR OUTPUT\n a) You may use the Software to view, compare, annotate, edit, convert and\n    review PDF documents, AutoCAD DXF drawings, PCB Gerber/Excellon/IPC CAM\n    layers, schematics and related files.\n b) You may use, share, publish and sell your Output. As between you and the\n    Publisher, you retain your rights in your Output. The Software does not\n    give you rights to third-party material in your source files or Output.\n c) You may share an unmodified official installer or portable copy without\n    charge, provided that you include this Agreement and do not suggest that\n    the copy is an official download or endorsed by the Publisher.\n\n4. RESTRICTIONS\nYou must not, and must not help another person to:\n a) sell, rent, lease, sublicense or charge for access to the Software itself;\n b) remove, obscure or alter the Software\'s name, branding, copyright or\n    other proprietary notices, or this Agreement;\n c) modify, adapt or redistribute the Software as an official Kensho Pro\n    release, or misrepresent the source or authenticity of a copy;\n d) reverse engineer, decompile or disassemble the Software, except to the\n    extent that applicable law does not allow this restriction;\n e) bypass or interfere with security, licensing or integrity features;\n f) use the Software in violation of applicable law or another person\'s\n    rights; or\n g) use the Software to introduce malware, disrupt systems or interfere with\n    another person\'s use of the Software.\n\n5. OWNERSHIP AND FEEDBACK\nThe Software, including its code, design, names, branding and documentation,\nis owned by the Publisher or its licensors and is protected by applicable\nintellectual-property laws. Except for the limited license in this\nAgreement, no rights are granted to you. If you choose to send suggestions\nor feedback, you allow the Publisher to use them without restriction or\npayment, but this does not grant rights to your files or Output.\n\n6. YOUR FILES, PRIVACY AND SECURITY\nThe Software is designed to process files 100% locally on your computer.\nIt does not upload your documents or include tracking or telemetry. Optional\nwebsite or other external links open only when you explicitly choose them;\nvisiting an external site may be subject to that site\'s own terms and\nprivacy practices. Your device, operating system or other software may\nseparately collect or transmit information.\n\nYou are responsible for the files you select, the permissions and rights\nneeded to use them, securing your device, and keeping appropriate backups.\nThe Publisher cannot restore files that are lost, damaged or overwritten.\nBefore saving over an original, make a separate copy if you need to preserve\nit.\n\n7. YOUR REVIEW AND USE OF RESULTS\nThe Software is an assistance tool, not a substitute for professional\njudgment or independent verification. Results can be incomplete or\ninaccurate because of source-file quality, scanning, scaling, alignment,\nfonts, settings or other conditions. You are responsible for reviewing\nresults and deciding whether they are suitable for your use.\n\nBefore approving, releasing, manufacturing, constructing or acting on\ntechnical material, a qualified person must independently verify all\ncritical dimensions, values, part numbers, revisions and changes against\nthe authoritative source documents. Do not rely solely on an automated\ncomparison for safety-critical, regulated or high-consequence decisions.\n\n8. COMPATIBILITY, AVAILABILITY AND SUPPORT\nThe Software may depend on your device, operating system and other software.\nYou are responsible for ensuring that your environment is suitable and for\nmaintaining it. The Publisher does not promise that the Software will work\nwith every device, file, format or future operating-system version, or that\nit will be continuously available, error-free or supported. No technical\nsupport or maintenance is included unless separately offered in writing.\n\n9. UPDATES AND TERMS\nThe Publisher may offer updates, corrections or new versions, but this\nAgreement does not require the Publisher to provide them. Updates may add,\nchange or remove features and may be subject to additional terms presented\nwith that update. This Agreement applies to the version of the Software\nwith which it is distributed. A revised Agreement applies to a later\nversion only if presented for that version; it does not retroactively\nchange the terms for a copy already licensed to you.\n\n10. THIRD-PARTY COMPONENTS\nThe Software includes or relies on Third-Party Components, which may include\nElectron, PDF.js and pdf-lib. Those components remain subject to their own\ncopyright notices and licenses. If a third-party license conflicts with\nthis Agreement as to that component, the third-party license controls for\nthat component. Nothing in this Agreement limits rights that a third-party\nlicense grants to you.\n\n11. DISCLAIMER OF WARRANTIES\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED\n"AS IS" AND "AS AVAILABLE", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,\nEXPRESS, IMPLIED OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE, ACCURACY, TITLE AND NON-INFRINGEMENT. THE\nPUBLISHER DOES NOT WARRANT THAT DEFECTS WILL BE CORRECTED OR THAT THE\nSOFTWARE WILL MEET YOUR REQUIREMENTS. THIS SECTION DOES NOT EXCLUDE ANY\nWARRANTY OR RIGHT THAT CANNOT LAWFULLY BE EXCLUDED.\n\n12. LIMITATION OF LIABILITY\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE PUBLISHER AND ITS\nLICENSORS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY OR\nCONSEQUENTIAL LOSS OR DAMAGE, OR FOR LOSS OF PROFITS, REVENUE, DATA,\nGOODWILL, PRODUCTION, BUSINESS OPPORTUNITY OR TIME, ARISING OUT OF OR\nRELATED TO THE SOFTWARE OR THIS AGREEMENT, EVEN IF ADVISED OF THE\nPOSSIBILITY OF SUCH LOSS.\n\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE PUBLISHER\'S TOTAL\nLIABILITY FOR ALL CLAIMS RELATING TO THE SOFTWARE OR THIS AGREEMENT WILL\nNOT EXCEED THE AMOUNT YOU PAID, IF ANY, TO OBTAIN THE SOFTWARE. Because the\nSoftware is provided free of charge, this amount may be zero. Nothing in\nthis Agreement excludes or limits liability that cannot lawfully be\nexcluded or limited, including liability for fraud or intentional\nmisconduct where such limitation is prohibited.\n\n13. INDEMNITY FOR UNLAWFUL USE\nTo the extent permitted by applicable law, you are responsible for claims\narising from your unlawful use of the Software or your violation of another\nperson\'s rights. This section does not require you to indemnify the\nPublisher for the Publisher\'s own unlawful conduct or for liability that\ncannot lawfully be shifted to you.\n\n14. SUSPENSION AND TERMINATION\nYour license continues unless it ends under this section. It terminates\nautomatically if you materially breach this Agreement. Where the breach can\nbe remedied, the Publisher may give you notice and a reasonable opportunity\nto remedy it before termination. Upon termination, stop using the Software\nand delete the copies you control. Sections that by their nature should\ncontinue after termination, including ownership, disclaimers, limitations\nof liability and general terms, will survive.\n\n15. GOVERNING LAW AND GENERAL TERMS\nThis Agreement is governed by the laws of India, without regard to conflict\nof law principles, subject to any mandatory consumer protections and rights\nthat apply to you. Any dispute will be handled by a court or other forum\nwith jurisdiction under applicable law.\n\nThis Agreement is the entire agreement between you and the Publisher about\nthe Software and replaces prior agreements on that subject. If a provision\nis found unenforceable, it will be limited to the minimum extent necessary\nand the remaining provisions will continue in effect. A failure to enforce\na provision is not a waiver of the right to enforce it later. You may not\ntransfer this Agreement or your license except as permitted by applicable\nlaw. The Publisher may transfer its rights and obligations as part of a\nbusiness reorganization or transfer, provided this does not reduce your\nmandatory legal rights. This Agreement does not create an agency,\npartnership or employment relationship.\n\n16. MANDATORY RIGHTS\nNothing in this Agreement is intended to exclude, restrict or waive a\nconsumer protection, statutory guarantee or other right that applicable\nlaw does not permit you to waive. Where a term conflicts with such a right,\nthat term applies only to the extent permitted by law.\n\nCopyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.';
+  const FULL_EULA_TEXT = 'KENSHO PRO - END-USER LICENSE AGREEMENT (EULA)\nVersion 1.2.3.2  |  Publisher: Kensho Studio  |  Website: textportdocx.in\n\nPLEASE READ THIS AGREEMENT BEFORE INSTALLING OR USING KENSHO PRO.\nBy clicking "I accept the terms of the License Agreement", "I Agree",\ninstalling, copying or using Kensho Pro (the "Software"), you agree to\nthis End-User License Agreement ("Agreement"). If you do not agree, do\nnot install or use the Software and delete any copy in your possession.\nIf you use the Software on behalf of an organization, you confirm that\nyou are authorized to accept this Agreement for it; "you" then includes\nthat organization.\n\n1. DEFINITIONS\n"Publisher", "we" or "us" means Kensho Studio. "Output" means reports,\nmarkups, comparisons, exports or other materials you create using the\nSoftware. "Third-Party Components" means software distributed with or used\nby the Software that is subject to a separate license.\n\n2. LICENSE GRANT AND COST\nSubject to this Agreement, the Publisher grants you a free, non-exclusive,\nworldwide, perpetual, royalty-free license to install and use the Software\non computers you own or control, for personal, educational and commercial\nengineering, CAD, CAM, architectural, and quality-assurance work. There\nare no license fees, subscriptions or account requirements for the license\ngranted here. This license is for use of the Software and does not transfer\nownership of the Software or its intellectual property to you.\n\n3. PERMITTED USE AND YOUR OUTPUT\n a) You may use the Software to view, compare, annotate, edit, convert and\n    review PDF documents, AutoCAD DXF drawings, PCB Gerber/Excellon/IPC CAM\n    layers, schematics and related files.\n b) You may use, share, publish and sell your Output. As between you and the\n    Publisher, you retain your rights in your Output. The Software does not\n    give you rights to third-party material in your source files or Output.\n c) You may share an unmodified official installer or portable copy without\n    charge, provided that you include this Agreement and do not suggest that\n    the copy is an official download or endorsed by the Publisher.\n\n4. RESTRICTIONS\nYou must not, and must not help another person to:\n a) sell, rent, lease, sublicense or charge for access to the Software itself;\n b) remove, obscure or alter the Software\'s name, branding, copyright or\n    other proprietary notices, or this Agreement;\n c) modify, adapt or redistribute the Software as an official Kensho Pro\n    release, or misrepresent the source or authenticity of a copy;\n d) reverse engineer, decompile or disassemble the Software, except to the\n    extent that applicable law does not allow this restriction;\n e) bypass or interfere with security, licensing or integrity features;\n f) use the Software in violation of applicable law or another person\'s\n    rights; or\n g) use the Software to introduce malware, disrupt systems or interfere with\n    another person\'s use of the Software.\n\n5. OWNERSHIP AND FEEDBACK\nThe Software, including its code, design, names, branding and documentation,\nis owned by the Publisher or its licensors and is protected by applicable\nintellectual-property laws. Except for the limited license in this\nAgreement, no rights are granted to you. If you choose to send suggestions\nor feedback, you allow the Publisher to use them without restriction or\npayment, but this does not grant rights to your files or Output.\n\n6. YOUR FILES, PRIVACY AND SECURITY\nThe Software is designed to process files 100% locally on your computer.\nIt does not upload your documents or include tracking or telemetry. Optional\nwebsite or other external links open only when you explicitly choose them;\nvisiting an external site may be subject to that site\'s own terms and\nprivacy practices. Your device, operating system or other software may\nseparately collect or transmit information.\n\nYou are responsible for the files you select, the permissions and rights\nneeded to use them, securing your device, and keeping appropriate backups.\nThe Publisher cannot restore files that are lost, damaged or overwritten.\nBefore saving over an original, make a separate copy if you need to preserve\nit.\n\n7. YOUR REVIEW AND USE OF RESULTS\nThe Software is an assistance tool, not a substitute for professional\njudgment or independent verification. Results can be incomplete or\ninaccurate because of source-file quality, scanning, scaling, alignment,\nfonts, settings or other conditions. You are responsible for reviewing\nresults and deciding whether they are suitable for your use.\n\nBefore approving, releasing, manufacturing, constructing or acting on\ntechnical material, a qualified person must independently verify all\ncritical dimensions, values, part numbers, revisions and changes against\nthe authoritative source documents. Do not rely solely on an automated\ncomparison for safety-critical, regulated or high-consequence decisions.\n\n8. COMPATIBILITY, AVAILABILITY AND SUPPORT\nThe Software may depend on your device, operating system and other software.\nYou are responsible for ensuring that your environment is suitable and for\nmaintaining it. The Publisher does not promise that the Software will work\nwith every device, file, format or future operating-system version, or that\nit will be continuously available, error-free or supported. No technical\nsupport or maintenance is included unless separately offered in writing.\n\n9. UPDATES AND TERMS\nThe Publisher may offer updates, corrections or new versions, but this\nAgreement does not require the Publisher to provide them. Updates may add,\nchange or remove features and may be subject to additional terms presented\nwith that update. This Agreement applies to the version of the Software\nwith which it is distributed. A revised Agreement applies to a later\nversion only if presented for that version; it does not retroactively\nchange the terms for a copy already licensed to you.\n\n10. THIRD-PARTY COMPONENTS\nThe Software includes or relies on Third-Party Components, which may include\nElectron, PDF.js and pdf-lib. Those components remain subject to their own\ncopyright notices and licenses. If a third-party license conflicts with\nthis Agreement as to that component, the third-party license controls for\nthat component. Nothing in this Agreement limits rights that a third-party\nlicense grants to you.\n\n11. DISCLAIMER OF WARRANTIES\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED\n"AS IS" AND "AS AVAILABLE", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,\nEXPRESS, IMPLIED OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE, ACCURACY, TITLE AND NON-INFRINGEMENT. THE\nPUBLISHER DOES NOT WARRANT THAT DEFECTS WILL BE CORRECTED OR THAT THE\nSOFTWARE WILL MEET YOUR REQUIREMENTS. THIS SECTION DOES NOT EXCLUDE ANY\nWARRANTY OR RIGHT THAT CANNOT LAWFULLY BE EXCLUDED.\n\n12. LIMITATION OF LIABILITY\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE PUBLISHER AND ITS\nLICENSORS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY OR\nCONSEQUENTIAL LOSS OR DAMAGE, OR FOR LOSS OF PROFITS, REVENUE, DATA,\nGOODWILL, PRODUCTION, BUSINESS OPPORTUNITY OR TIME, ARISING OUT OF OR\nRELATED TO THE SOFTWARE OR THIS AGREEMENT, EVEN IF ADVISED OF THE\nPOSSIBILITY OF SUCH LOSS.\n\nTO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE PUBLISHER\'S TOTAL\nLIABILITY FOR ALL CLAIMS RELATING TO THE SOFTWARE OR THIS AGREEMENT WILL\nNOT EXCEED THE AMOUNT YOU PAID, IF ANY, TO OBTAIN THE SOFTWARE. Because the\nSoftware is provided free of charge, this amount may be zero. Nothing in\nthis Agreement excludes or limits liability that cannot lawfully be\nexcluded or limited, including liability for fraud or intentional\nmisconduct where such limitation is prohibited.\n\n13. INDEMNITY FOR UNLAWFUL USE\nTo the extent permitted by applicable law, you are responsible for claims\narising from your unlawful use of the Software or your violation of another\nperson\'s rights. This section does not require you to indemnify the\nPublisher for the Publisher\'s own unlawful conduct or for liability that\ncannot lawfully be shifted to you.\n\n14. SUSPENSION AND TERMINATION\nYour license continues unless it ends under this section. It terminates\nautomatically if you materially breach this Agreement. Where the breach can\nbe remedied, the Publisher may give you notice and a reasonable opportunity\nto remedy it before termination. Upon termination, stop using the Software\nand delete the copies you control. Sections that by their nature should\ncontinue after termination, including ownership, disclaimers, limitations\nof liability and general terms, will survive.\n\n15. GOVERNING LAW AND GENERAL TERMS\nThis Agreement is governed by the laws of India, without regard to conflict\nof law principles, subject to any mandatory consumer protections and rights\nthat apply to you. Any dispute will be handled by a court or other forum\nwith jurisdiction under applicable law.\n\nThis Agreement is the entire agreement between you and the Publisher about\nthe Software and replaces prior agreements on that subject. If a provision\nis found unenforceable, it will be limited to the minimum extent necessary\nand the remaining provisions will continue in effect. A failure to enforce\na provision is not a waiver of the right to enforce it later. You may not\ntransfer this Agreement or your license except as permitted by applicable\nlaw. The Publisher may transfer its rights and obligations as part of a\nbusiness reorganization or transfer, provided this does not reduce your\nmandatory legal rights. This Agreement does not create an agency,\npartnership or employment relationship.\n\n16. MANDATORY RIGHTS\nNothing in this Agreement is intended to exclude, restrict or waive a\nconsumer protection, statutory guarantee or other right that applicable\nlaw does not permit you to waive. Where a term conflicts with such a right,\nthat term applies only to the extent permitted by law.\n\nCopyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.';
   function showTerms() {
     const existing = document.getElementById('rp-license-modal');
     if (existing) existing.remove();
-    const d = el('div', { id: 'rp-license-modal', className: 'rp-modal' }, `<div class="rp-card rp-wide"><h2>Kensho Pro — End-User License Agreement (EULA) &amp; Zero-Telemetry Guarantee</h2><p class="rp-sub">Kensho Pro 1.2.3 &middot; Kensho Studio &middot; textportdocx.in &middot; Free for Personal &amp; Commercial Use</p>
+    const d = el('div', { id: 'rp-license-modal', className: 'rp-modal' }, `<div class="rp-card rp-wide"><h2>Kensho Pro — End-User License Agreement (EULA) &amp; Zero-Telemetry Guarantee</h2><p class="rp-sub">Kensho Pro 1.2.3.2 &middot; Kensho Studio &middot; textportdocx.in &middot; Free for Personal &amp; Commercial Use</p>
       <div class="rp-scroll" style="display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow-y:auto">
-        <div><b>1. Grant of License (100% Free Commercial &amp; Personal Use)</b><br>Kensho Studio grants you a perpetual, worldwide, royalty-free, non-exclusive license to install and use Kensho Pro 1.2.3 on unlimited workstations for both personal and commercial engineering, PCB design, manufacturing, architectural, and quality-assurance workflows.</div>
+        <div><b>1. Grant of License (100% Free Commercial &amp; Personal Use)</b><br>Kensho Studio grants you a perpetual, worldwide, royalty-free, non-exclusive license to install and use Kensho Pro 1.2.3.2 on unlimited workstations for both personal and commercial engineering, PCB design, manufacturing, architectural, and quality-assurance workflows.</div>
         <div><b>2. 100% Offline &amp; Air-Gapped Privacy Guarantee</b><br>All PDF drawings, AutoCAD DXF files, Gerber RS-274X layers, Excellon NC drill files, IPC-D-356 netlists, and project sessions (.kensho / .redline) are processed 100% locally on your machine. Kensho Pro contains zero telemetry, zero analytics, zero cloud uploads, and makes zero unsolicited external network requests.</div>
         <div><b>3. Intellectual Property &amp; Redistribution</b><br>Kensho Pro is copyright &copy; 2026 Kensho Studio (textportdocx.in). You may freely distribute unmodified copies of the official installer or portable package within your organization.</div>
         <div><b>4. Disclaimer of Warranty</b><br>This software is provided "AS IS" without warranty of any kind, express or implied. Verify critical fabrication clearances, drill schedules, and engineering tolerances prior to manufacturing release. The full license text is shown below and included in LICENSE.txt in the application folder.</div>
         <details open style="margin-top:4px;border:1px solid var(--line2);border-radius:6px;padding:8px 10px;background:var(--panel2)">
-          <summary style="cursor:pointer;font-weight:700;font-size:12px">Complete End-User License Agreement (LICENSE.txt — Version 1.2.3)</summary>
+          <summary style="cursor:pointer;font-weight:700;font-size:12px">Complete End-User License Agreement (LICENSE.txt — Version 1.2.3.2)</summary>
           <pre style="margin:8px 0 0 0;white-space:pre-wrap;font-family:Consolas,monospace;font-size:11px;line-height:1.45;color:var(--ink)">KENSHO PRO - END-USER LICENSE AGREEMENT (EULA)
-Version 1.2.3  |  Publisher: Kensho Studio  |  Website: textportdocx.in
+Version 1.2.3.2  |  Publisher: Kensho Studio  |  Website: textportdocx.in
 
 PLEASE READ THIS AGREEMENT BEFORE INSTALLING OR USING KENSHO PRO.
 By clicking "I accept the terms of the License Agreement", "I Agree",
@@ -214,7 +214,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
       };
     }
     d.querySelector('#rp-lic-close').onclick = () => {
-      safeSet('termsAccepted', '1.2.3');
+      safeSet('termsAccepted', '1.2.3.2');
       d.remove();
     };
     d.querySelector('#rp-lic-about').onclick = () => { d.remove(); if ($('#modal')) $('#modal').hidden = false; };
@@ -247,6 +247,18 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
   if ($('#vp')) $('#vp').appendChild(stageLd);
   else document.body.appendChild(stageLd);
 
+  // Mount live Thinking Orbs (Jakubantalik/thinking-orbs) into both telemetry pill & viewport stage loader
+  const _ldOrbHost = ld.querySelector('.rp-ring');
+  const _stageOrbHost = stageLd.querySelector('.rp-stage-reticle');
+  const _ldOrb = (typeof window !== 'undefined' && window.ThinkingOrbs && _ldOrbHost)
+    ? window.ThinkingOrbs.mount(_ldOrbHost, { state: 'working', size: 20, displaySize: 28, theme: 'auto', paused: true })
+    : null;
+  const _stageOrb = (typeof window !== 'undefined' && window.ThinkingOrbs && _stageOrbHost)
+    ? window.ThinkingOrbs.mount(_stageOrbHost, { state: 'searching', size: 64, displaySize: 34, theme: 'auto', paused: true })
+    : null;
+  if (_ldOrbHost && _ldOrb) _ldOrbHost.classList.add('rp-orb-active');
+  if (_stageOrbHost && _stageOrb) _stageOrbHost.classList.add('rp-orb-active');
+
   const inferProgressSub = (lbl) => {
     const s = String(lbl || '').toLowerCase();
     if (s.includes('opening') || s.includes('reading')) return 'Parsing PDF stream & vector geometry';
@@ -268,6 +280,8 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     if (frac == null) {
       ld.hidden = true;
       stageLd.hidden = true;
+      if (_ldOrb) _ldOrb.setPaused(true);
+      if (_stageOrb) _stageOrb.setPaused(true);
       return;
     }
     const host = (document.body.dataset.view === 'edit' ? $('#eview') : $('#vp')) || $('#vp');
@@ -277,6 +291,11 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     const p = Math.max(0, Math.min(100, Math.round(frac * 100)));
     ld.hidden = false;
     stageLd.hidden = false;
+    if (window.ThinkingOrbs) {
+      const orbState = window.ThinkingOrbs.inferState(titleTxt + ' ' + subTxt);
+      if (_ldOrb) { _ldOrb.setState(orbState); _ldOrb.setPaused(false); _ldOrb.poke(); }
+      if (_stageOrb) { _stageOrb.setState(orbState); _stageOrb.setPaused(false); _stageOrb.poke(); }
+    }
     $('#rp-lt').textContent = titleTxt;
     $('#rp-ls').textContent = subTxt;
     $('#rp-lb').style.width = p + '%';
@@ -409,7 +428,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     if (vp && vp.classList.contains('drag')) {
       return;
     }
-    if (v && v.k > 0.05) {
+    if (v && (isNativeDXFActive ? v.k > 0.05 : !zoomLow)) {
       hqT = setTimeout(sharpen, isNativeDXFActive ? 16 : Math.max(40, d || 65));
     }
   };
@@ -542,7 +561,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     clearTimeout(hqT);
     cancelHqTasks();
     if (vp && vp.classList.contains('drag')) return;
-    const r = S.cur, prev = (!r && S.preview) ? S.preview : null, v = S.view, d = DPR(), m = S.mode;
+    const r = S.cur, prev = (!r && S.preview) ? S.preview : null, v = S.view, d = Math.max(DPR(), 1.5), m = S.mode;
     const curtainOn = !!(window.UIRibbon && window.UIRibbon.isCurtainActive && window.UIRibbon.isCurtainActive());
     if (prev && v && (v.k * d > 0.05) && !S._isCAMScan) {
       const W = Math.round(vp.clientWidth * d), H = Math.round(vp.clientHeight * d);
@@ -628,7 +647,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
       hq.style.display = 'block';
       return;
     }
-    if (!r || (!curtainOn && (m === 'side' || m === 'blink')) || !r.cls || !v || (v.k * d <= 0.05) || S._isCAMScan || Math.abs(S.rotA || 0) > 0.001 || Math.abs(S.rotB || 0) > 0.001) { hq.style.display = 'none'; hq._cropA = null; hq._cropB = null; hq._lastKey = ''; return; }
+    if (!r || (!curtainOn && (m === 'side' || m === 'blink')) || !r.cls || !v || (v.k * DPR() <= 1.02) || S._isCAMScan || Math.abs(S.rotA || 0) > 0.001 || Math.abs(S.rotB || 0) > 0.001) { hq.style.display = 'none'; hq._cropA = null; hq._cropB = null; hq._lastKey = ''; return; }
     const W = Math.round(vp.clientWidth * d), H = Math.round(vp.clientHeight * d);
     if (!W || !H || W * H > 20e6) return;
     const vx0 = v.x, vy0 = v.y, k0 = v.k;
@@ -667,7 +686,10 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
       }
       hq.style.clipPath = 'none';
       hq._lastKey = sharpenKey;
-      hq._lastZoomK = k0; hq.style.display = 'block';
+      hq._lastZoomK = k0;
+      hq._lastVx = vx0;
+      hq._lastDpr = d;
+      hq.style.display = 'block';
       return;
     }
     hq._cropA = null;
@@ -959,7 +981,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
   // ---------- Help centre ----------
   function help() {
     if (window.showQuickGuideModal) return window.showQuickGuideModal('all');
-    const d = el('div', { className: 'rp-modal' }, `<div class="rp-card rp-wide"><h2>Kensho Pro Help</h2><p class="rp-sub">Kensho Studio &middot; textportdocx.in &middot; Version 1.2.3</p>
+    const d = el('div', { className: 'rp-modal' }, `<div class="rp-card rp-wide"><h2>Kensho Pro Help</h2><p class="rp-sub">Kensho Studio &middot; textportdocx.in &middot; Version 1.2.3.2</p>
     <div class="rp-scroll rp-grid">
     <section><h4>Compare &amp; Auto-Align</h4><p>Open Base (Rev A) and Revised (Rev B). Use Auto-Align or 3-Point Fiducial Snap. N / F3 and P / Shift+F3 jump between defects.</p></section>
     <section><h4>60 FPS Split Curtain</h4><p>Toggle Split Curtain in View &amp; Enhance (or Mode selector, shortcut C) and drag the divider handle to reveal Rev A on the left and Rev B on the right.</p></section>
@@ -1668,15 +1690,17 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     } else if (tool === 'pen') {
       renderSingleAnnotation(ctx, { kind: 'pen', pts, color: curCol, lineWidth: curW, opacity: curOp, dash: curDash }, k);
     } else if (tool === 'angle') {
-      const deg = (pts.length >= 3 && typeof MeasureEngine !== 'undefined' && MeasureEngine.calcThreePointAngle)
-        ? MeasureEngine.calcThreePointAngle(pts[0], pts[1], pts[2])
-        : 0;
+      const angRes = (pts.length >= 3 && typeof MeasureEngine !== 'undefined' && MeasureEngine.calc3PointAngle)
+        ? MeasureEngine.calc3PointAngle(pts[0], pts[1], pts[2])
+        : null;
+      const deg = angRes ? angRes.degrees : 0;
       const lbl = pts.length >= 3 ? `∠ ${deg.toFixed(2)}°` : 'Click vertex then 3rd point';
       renderSingleAnnotation(ctx, { kind: 'angle', pts, label: lbl, color: '#8b5cf6', lineWidth: 2.2 }, k);
     } else if (tool === 'rad3') {
-      const circ = (pts.length >= 3 && typeof MeasureEngine !== 'undefined' && MeasureEngine.calcCircleFromThreePoints)
-        ? MeasureEngine.calcCircleFromThreePoints(pts[0], pts[1], pts[2])
+      const circRaw = (pts.length >= 3 && typeof MeasureEngine !== 'undefined' && MeasureEngine.calc3PointCircle)
+        ? MeasureEngine.calc3PointCircle(pts[0], pts[1], pts[2])
         : null;
+      const circ = (circRaw && circRaw.valid) ? circRaw : null;
       const lbl = circ ? (cal ? `⌀ ${cal.formatDistance(circ.diameter)} (R: ${cal.formatDistance(circ.r)})` : `⌀ ${(circ.diameter).toFixed(1)} px`) : 'Click 3 points on arc/circle';
       renderSingleAnnotation(ctx, { kind: 'rad3', pts, circle: circ, label: lbl, color: '#0284c7', lineWidth: 2.2 }, k);
     } else if (tool === 'redact') {
@@ -1846,6 +1870,10 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     if (a.kind === 'pin') {
       const sz = a.size || 24;
       return Math.hypot(x - a.x, y - (a.y - sz * 0.6)) <= Math.max(rad, sz * 0.75);
+    }
+    if (a.kind === 'fai') {
+      const r = (a.size || 24) / 2;
+      return Math.hypot(x - a.x, y - a.y) <= Math.max(rad, r + 4);
     }
     if (a.kind === 'stamp') {
       return x >= a.x - rad && x <= a.x + 210 + rad && y >= a.y - rad && y <= a.y + 76 + rad;
@@ -2207,17 +2235,19 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
       if (!RM.faiManager && typeof MeasureEngine !== 'undefined' && MeasureEngine.FAIManager) {
         RM.faiManager = new MeasureEngine.FAIManager();
       }
-      const nextChar = RM.faiManager ? RM.faiManager.nextCharNum : ((RM.nextPinNum || 1));
+      const nextChar = RM.faiManager ? RM.faiManager.nextBalloon : ((RM.nextPinNum || 1));
       let reqTxt = '12.50 ±0.05 mm';
+      let zoneTxt = `P${curPage}`;
       if (window.dialog) {
         const r = await window.dialog(`AS9102 FAI Balloon #${nextChar}`, [
           { id: 'req', label: 'Drawing Requirement & Tolerance', value: reqTxt },
-          { id: 'zone', label: 'Sheet Zone', value: `P${curPage}` }
+          { id: 'zone', label: 'Sheet Zone', value: zoneTxt }
         ], 'Place FAI Balloon');
         if (!r) return;
         reqTxt = r.req || reqTxt;
+        zoneTxt = r.zone || zoneTxt;
       }
-      const item = RM.faiManager ? RM.faiManager.addBalloon(pt.x, pt.y, curPage, reqTxt, `P${curPage}`, '') : { charNo: nextChar, requirement: reqTxt };
+      const item = RM.faiManager ? RM.faiManager.addBalloon(pt.x, pt.y, curPage, reqTxt, zoneTxt, '') : { charNo: nextChar, requirement: reqTxt };
       if (window.rpPushCompareHistory) window.rpPushCompareHistory('Place FAI balloon');
       RM.annotations.push({
         kind: 'fai',
@@ -2241,17 +2271,19 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
         const [p1, p2, p3] = RM.points;
         const cal = RM.calibrator;
         if (tool === 'angle') {
-          const deg = (typeof MeasureEngine !== 'undefined' && MeasureEngine.calcThreePointAngle)
-            ? MeasureEngine.calcThreePointAngle(p1, p2, p3)
-            : 0;
+          const angRes = (typeof MeasureEngine !== 'undefined' && MeasureEngine.calc3PointAngle)
+            ? MeasureEngine.calc3PointAngle(p1, p2, p3)
+            : null;
+          const deg = angRes ? angRes.degrees : 0;
           const lbl = `∠ ${deg.toFixed(2)}°`;
           if (window.rpPushCompareHistory) window.rpPushCompareHistory('3-Point Angle');
           const _newAng = { kind: 'angle', page: curPage, pts: [p1, p2, p3], label: lbl, color: '#8b5cf6', lineWidth: 2.2, _uncommitted: true }; RM.annotations.push(_newAng); RM.uncommittedAnns.push(_newAng);
           if (window.rpToast) window.rpToast(`Measured 3-Point Angle: ${lbl}`);
         } else {
-          const circ = (typeof MeasureEngine !== 'undefined' && MeasureEngine.calcCircleFromThreePoints)
-            ? MeasureEngine.calcCircleFromThreePoints(p1, p2, p3)
+          const circRaw = (typeof MeasureEngine !== 'undefined' && MeasureEngine.calc3PointCircle)
+            ? MeasureEngine.calc3PointCircle(p1, p2, p3)
             : null;
+          const circ = (circRaw && circRaw.valid) ? circRaw : null;
           if (circ) {
             const lbl = cal ? `⌀ ${cal.formatDistance(circ.diameter)} (R: ${cal.formatDistance(circ.r)})` : `⌀ ${circ.diameter.toFixed(1)} px (R: ${circ.r.toFixed(1)} px)`;
             if (window.rpPushCompareHistory) window.rpPushCompareHistory('3-Point Circle');
@@ -2506,7 +2538,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
         const igIds = new Set(RM.uncommittedIgnores);
         S.ignore = S.ignore.filter(g => !igIds.has(g.id));
         if (typeof window.markers === 'function') window.markers();
-        if (typeof window.redo === 'function') window.redo();
+        if (typeof window.refresh === 'function') window.refresh();
       }
 
       RM.uncommittedAnns = [];
@@ -2554,7 +2586,7 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
           RM.uncommittedIgnores.push(g.id);
         });
         if (typeof window.markers === 'function') window.markers();
-        if (typeof window.redo === 'function') window.redo();
+        if (typeof window.refresh === 'function') window.refresh();
       }
       if (snap.points && snap.points.length) {
         RM.points = [...snap.points];
@@ -3040,5 +3072,5 @@ Copyright (c) 2026 Kensho Studio - textportdocx.in. All rights reserved.</pre>
     initRedlineProUI();
   }
 
-  safeSet('termsAccepted', '1.2.3');
+  safeSet('termsAccepted', '1.2.3.2');
 })();

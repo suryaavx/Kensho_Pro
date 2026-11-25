@@ -148,11 +148,49 @@
     return out;
   }
 
+  function reclaimWorkspaceMemory(opts = {}) {
+    const keepCurrentPage = opts.keepCurrentPage !== false;
+    let freedEntries = 0;
+    try {
+      const S = (typeof window !== 'undefined') ? window.CMP : null;
+      if (S) {
+        const curN = S.cur && S.cur.n;
+        if (S.analysisCache && typeof S.analysisCache.forEach === 'function') {
+          const toDelete = [];
+          S.analysisCache.forEach((val, key) => {
+            if (!keepCurrentPage || !curN || !String(key).startsWith(curN + '::')) {
+              releaseAnalysisResult(val);
+              toDelete.push(key);
+            }
+          });
+          toDelete.forEach(k => { S.analysisCache.delete(k); freedEntries++; });
+        }
+        const rcStore = S.rcMap || S.cache;
+        if (rcStore && typeof rcStore.forEach === 'function') {
+          const toDelete = [];
+          rcStore.forEach((val, key) => {
+            const isCurPage = curN && (key === curN || String(key).startsWith(curN + '|'));
+            if (!keepCurrentPage || !isCurPage) {
+              releaseRenderPairEntry(val);
+              toDelete.push(key);
+            }
+          });
+          toDelete.forEach(k => { rcStore.delete(k); freedEntries++; });
+        }
+      }
+      if (typeof window !== 'undefined' && typeof window.gc === 'function') {
+        try { window.gc(); } catch (_) {}
+      }
+    } catch (_) {}
+    return { freedEntries };
+  }
+
   return {
     releaseCanvas,
     releaseRenderPairEntry,
     releaseAnalysisResult,
     releaseCropCanvases,
+    reclaimWorkspaceMemory,
     parseHexRgb,
     classifyDiffPixelTint,
     transformSubBoxes

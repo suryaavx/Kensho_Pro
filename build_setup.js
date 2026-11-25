@@ -1,5 +1,5 @@
 /**
- * Kensho Pro 1.2.3 — Automated NSIS Setup Installer Builder (build_setup.js)
+ * Kensho Pro 1.2.3.2 (Build O1R0A7N5G0E002026A1232) — Automated NSIS Setup Installer Builder (build_setup.js)
  * Resolves makensis.exe across system NSIS installs (Program Files, Chocolatey, PATH)
  * and electron-builder cache (injecting nsis-resources plugin paths when needed),
  * with safe try/catch fallback to electron-builder so Windows builds never fail.
@@ -14,15 +14,27 @@ const isWin = process.platform === 'win32';
 
 function getCacheRoots() {
   const home = os.homedir ? os.homedir() : '';
-  return [
-    process.env.ELECTRON_BUILDER_CACHE ? path.join(process.env.ELECTRON_BUILDER_CACHE, 'nsis') : null,
-    process.env.ELECTRON_BUILDER_CACHE,
-    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'electron-builder', 'Cache', 'nsis') : null,
-    process.env.APPDATA ? path.join(process.env.APPDATA, 'electron-builder', 'Cache', 'nsis') : null,
-    process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Local', 'electron-builder', 'Cache', 'nsis') : null,
-    home ? path.join(home, '.cache', 'electron-builder', 'nsis') : null,
-    home ? path.join(home, 'Library', 'Caches', 'electron-builder', 'nsis') : null
+  const bases = [
+    process.env.ELECTRON_BUILDER_CACHE || null,
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'electron-builder', 'Cache') : null,
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'electron-builder', 'Cache') : null,
+    process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Local', 'electron-builder', 'Cache') : null,
+    home ? path.join(home, '.cache', 'electron-builder') : null,
+    home ? path.join(home, 'Library', 'Caches', 'electron-builder') : null
   ].filter(Boolean);
+  const roots = [];
+  for (const b of bases) {
+    roots.push(path.join(b, 'nsis'));
+    roots.push(b);
+    try {
+      if (fs.existsSync(b)) {
+        for (const ent of fs.readdirSync(b)) {
+          if (ent.startsWith('nsis')) roots.push(path.join(b, ent));
+        }
+      }
+    } catch (_) {}
+  }
+  return Array.from(new Set(roots));
 }
 
 function findInElectronBuilderCache() {
@@ -33,10 +45,12 @@ function findInElectronBuilderCache() {
       const entries = fs.readdirSync(nsisRoot).sort().reverse();
       for (const entry of entries) {
         if (entry.startsWith('nsis-resources')) continue;
-        const candidate1 = path.join(nsisRoot, entry, 'Bin', isWin ? 'makensis.exe' : 'makensis');
-        const candidate2 = path.join(nsisRoot, entry, isWin ? 'makensis.exe' : 'makensis');
-        if (fs.existsSync(candidate1)) return candidate1;
-        if (fs.existsSync(candidate2)) return candidate2;
+        const candidates = isWin
+          ? [path.join(nsisRoot, entry, 'Bin', 'makensis.exe'), path.join(nsisRoot, entry, 'makensis.exe')]
+          : [path.join(nsisRoot, entry, 'linux', 'makensis'), path.join(nsisRoot, entry, 'mac', 'makensis'), path.join(nsisRoot, entry, 'Bin', 'makensis'), path.join(nsisRoot, entry, 'makensis')];
+        for (const c of candidates) {
+          if (fs.existsSync(c)) return c;
+        }
       }
     } catch (e) {}
   }
@@ -145,17 +159,27 @@ function ensureWinUnpacked() {
 }
 
 function main() {
-  const outExeName = 'KenshoPro-Setup-1.2.3.exe';
+  const outExeName = 'KenshoPro-Setup-1.2.3.2.exe';
   const outExe = path.join(ROOT, 'dist', outExeName);
   fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
   ensureWinUnpacked();
+  try {
+    execFileSync(process.execPath, [path.join(ROOT, 'package_audit.js'), '--verify-dist', path.join('dist', 'win-unpacked'), '--fix'], { cwd: ROOT, stdio: 'inherit' });
+  } catch (auditErr) {
+    throw new Error('Packaging audit failed for dist/win-unpacked — aborting NSIS build.');
+  }
 
   const makensisBin = ensureMakensis();
   if (makensisBin) {
     console.log(`[build_setup] Using makensis: ${makensisBin}`);
     try {
       const args = buildMakensisArgs(outExeName);
-      execFileSync(makensisBin, args, { cwd: ROOT, stdio: 'inherit' });
+      const nsisEnv = { ...process.env };
+      const binDir = path.dirname(makensisBin);
+      const parentDir = path.resolve(binDir, '..');
+      if (fs.existsSync(path.join(parentDir, 'Stubs'))) nsisEnv.NSISDIR = parentDir;
+      else if (fs.existsSync(path.join(binDir, 'Stubs'))) nsisEnv.NSISDIR = binDir;
+      execFileSync(makensisBin, args, { cwd: ROOT, stdio: 'inherit', env: nsisEnv });
       if (fs.existsSync(outExe)) {
         console.log(`[build_setup] Successfully built ${outExe}`);
         return;

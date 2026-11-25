@@ -1,5 +1,5 @@
 KENSHO PRO - END-USER LICENSE AGREEMENT (EULA)
-Version 1.2.3  |  Publisher: Kensho Studio  |  Website: textportdocx.in
+Version 1.2.3.2 (Build O1R0A7N5G0E002026A1232)  |  Publisher: Kensho Studio  |  Website: textportdocx.in
 
 PLEASE READ THIS AGREEMENT BEFORE INSTALLING OR USING KENSHO PRO.
 By clicking "I accept the terms of the License Agreement", "I Agree",

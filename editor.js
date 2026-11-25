@@ -493,12 +493,15 @@ async function openBytes(bytes, name, path, keepTab) {
       const fn = window.dxfBytesToPDF || DXFEngine.dxfBytesToPDF;
       u8 = await fn(u8);
       name = String(name).replace(/\.[^.]+$/, '') + '.pdf';
+      path = null;
     } else if (/\.(png|jpe?g|webp|bmp|gif)$/i.test(name || '') && window.imageBytesToPDF) {
       u8 = await window.imageBytesToPDF(u8, name);
       name = String(name).replace(/\.[^.]+$/, '') + '.pdf';
+      path = null;
     }
     E.bytes = u8; E.name = name || 'document.pdf'; E.path = path || null; E.confirmed = false;
     E.hist = []; E.redo = []; E.ann = {}; E.annUndo = []; E.annRedo = []; E.meas = {};
+    if (E.faiManager && typeof E.faiManager.clear === 'function') E.faiManager.clear();
     E.cur = 0; E.fitMode = 'page'; E.lastCur = -1; closeFind();
     await reload(); E.savedBytes = E.bytes; st('Opened ' + E.name); window.addRecent(E.name, path, null, E.bytes); if (window.updateTitle) window.updateTitle();
   } catch (e) {
@@ -559,6 +562,7 @@ async function undo() {
     E.redo.push(E.bytes);
     E.bytes = E.hist.pop();
     E.ann = {};
+    E.meas = {};
     E.annUndo = [];
     E.annRedo = [];
     E.sel = null;
@@ -582,6 +586,7 @@ async function redo() {
     E.hist.push(E.bytes);
     E.bytes = E.redo.pop();
     E.ann = {};
+    E.meas = {};
     E.annUndo = [];
     E.annRedo = [];
     E.sel = null;
@@ -594,9 +599,15 @@ async function redo() {
 // ---------- PDF Studio Engineering Options: Align/Distribute, Snap-to-Grid, Lock Markup, Export Page PNG ----------
 function getSelectedAnnsForOps() {
   const list = [];
+  const pageAnns = new Set([...(E.ann[E.cur] || []), ...(E.meas[E.cur] || [])]);
+  if (Array.isArray(E.selAnns) && E.selAnns.length) {
+    for (const item of E.selAnns) {
+      if (item && pageAnns.has(item) && list.indexOf(item) === -1) list.push(item);
+    }
+  }
   if (Array.isArray(E.multiSel) && E.multiSel.length) {
     for (const item of E.multiSel) {
-      if (item && typeof item === 'object' && list.indexOf(item) === -1) list.push(item);
+      if (item && pageAnns.has(item) && list.indexOf(item) === -1) list.push(item);
     }
   }
   if (E.sel && list.indexOf(E.sel) === -1) list.push(E.sel);
@@ -622,7 +633,7 @@ function alignSelectedAnns(mode = 'left') {
     st('Select 2 or more unlocked markups (Multi 1·2·3) to align or distribute.');
     return 0;
   }
-  if (typeof pushAnnUndo === 'function') pushAnnUndo(`Align ${mode}`);
+  if (typeof pushAnnState === 'function') pushAnnState(`Align ${mode}`);
   const boxes = items.map(a => ({ a, b: getAnnSimpleBounds(a) })).filter(x => x.b);
   if (boxes.length < 2) return 0;
 
@@ -688,7 +699,7 @@ function toggleLockSelectedAnn() {
     st('Select a markup first to lock or unlock it.');
     return false;
   }
-  if (typeof pushAnnUndo === 'function') pushAnnUndo('Toggle Lock Markup');
+  if (typeof pushAnnState === 'function') pushAnnState('Toggle Lock Markup');
   const nextLocked = !items.every(a => !!a.locked);
   items.forEach(a => { a.locked = nextLocked; });
   const btn = typeof $ === 'function' ? $('#eLockAnnBtn') : null;
@@ -699,8 +710,8 @@ function toggleLockSelectedAnn() {
 }
 
 async function exportCurrentPagePNG() {
-  const baseCv = document.getElementById('epc');
-  const ovCv = document.getElementById('eoc');
+  const baseCv = document.getElementById('ecv');
+  const ovCv = document.getElementById('eov');
   if (!baseCv || !baseCv.width || !baseCv.height) {
     st('Open a PDF page first to export as PNG.');
     return null;
@@ -718,14 +729,15 @@ async function exportCurrentPagePNG() {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const baseName = (E.name || 'Document').replace(/\.pdf$/i, '') + `_Page_${E.page || 1}.png`;
+  const pageNum = (typeof E.cur === 'number' ? E.cur + 1 : 1);
+  const baseName = (E.name || 'Document').replace(/\.pdf$/i, '') + `_Page_${pageNum}.png`;
   if (typeof window !== 'undefined' && window.native && window.native.saveFile) {
     const saved = await window.native.saveFile({
       name: baseName,
       bytes,
       filters: [{ name: 'PNG Image (.png)', extensions: ['png'] }]
     });
-    if (saved) st(`Exported Page ${E.page || 1} PNG: ${saved}`);
+    if (saved) st(`Exported Page ${pageNum} PNG: ${saved}`);
     return saved;
   }
   return bytes;
@@ -1228,7 +1240,19 @@ function bbox(a) {
   return [a.x, a.y, a.w, a.h];
 }
 function moveAnn(a, dx, dy) {
-  if ('x1' in a) { a.x1 += dx; a.x2 += dx; a.y1 += dy; a.y2 += dy; } else if (a.pts) a.pts.forEach(p => { p[0] += dx; p[1] += dy; }); else { a.x += dx; a.y += dy; }
+  if (!a || a.locked) return;
+  if ('x1' in a) {
+    a.x1 += dx; a.x2 += dx; a.y1 += dy; a.y2 += dy;
+    if (E.snapGrid) {
+      const sdx = snapCoordToGrid(a.x1) - a.x1, sdy = snapCoordToGrid(a.y1) - a.y1;
+      a.x1 += sdx; a.x2 += sdx; a.y1 += sdy; a.y2 += sdy;
+    }
+  } else if (a.pts) {
+    a.pts.forEach(p => { p[0] += dx; p[1] += dy; });
+  } else {
+    a.x += dx; a.y += dy;
+    if (E.snapGrid) { a.x = snapCoordToGrid(a.x); a.y = snapCoordToGrid(a.y); }
+  }
 }
 function hitHandle(a, x, y) {
   if (!a) return null;
@@ -1294,10 +1318,14 @@ function hitAnnAt(a, x, y, rad) {
   const [bx, by, bw, bh] = bbox(a);
   return x >= bx - rad && x <= bx + bw + rad && y >= by - rad && y <= by + bh + rad;
 }
+function isAnnLayerVisible(a) {
+  return !E.activeLayer || E.activeLayer === 'all' || !a || !a.layer || a.layer === E.activeLayer;
+}
 function hit(x, y, customRad) {
   const list = [...(E.ann[E.cur] || []), ...(E.meas[E.cur] || [])], t = customRad != null ? customRad : 6 / K();
   for (let i = list.length - 1; i >= 0; i--) {
     const a = list[i];
+    if (!isAnnLayerVisible(a)) continue;
     if (hitAnnAt(a, x, y, t)) {
       if (a.t === 'whiteout' && a.g && E.tool !== 'eraser') {
         const pairedText = list.find( item => item.t === 'text' && item.g === a.g );
@@ -1513,6 +1541,7 @@ function eraseAtPoint(x, y) {
     const filterList = list => {
       const next = [];
       for (const a of (list || [])) {
+        if (a && (a.locked || !isAnnLayerVisible(a))) { next.push(a); continue; }
         if (a.t === 'draw' && Array.isArray(a.pts) && a.pts.length >= 1) {
           const hitRad = rad + (a.size || 2) / 2;
           if (a.pts.length === 1) {
@@ -1799,22 +1828,15 @@ async function renderPage() {
       try {
         const page = await doc.getPage(E.cur + 1), vp1 = page.getViewport({ scale: 1 }), _az = autoZoom(vp1), k = K();
         let dOv = DPR();
-        // Super-sample both PDF page canvas (#ecv) and markup/measurement overlay (#eov) to at least 2.0x (>=144 DPI) even on 1x displays!
+        // Fast-open crisp base canvas (>=2.0x density, 12.5MP smooth cap, 60MP ceiling) without 20MP CPU super-sample stall;
+        // deep zoom (down to 1 single word) is rendered at native vector DPI via #ehq viewport tile!
         let d = Math.max(dOv, 2.0);
         if (k > 1.35) d = Math.max(dOv, 2.0 / Math.sqrt(k / 1.35));
-        const area = vp1.width * k * vp1.height * k * d * d;
-        if (area > 6e7) d *= Math.sqrt(6e7 / area);
         const maxSmoothArea = 1.25e7;
+        let area = vp1.width * k * vp1.height * k * d * d;
         if (area > maxSmoothArea) d = Math.max(Math.min(dOv, 1.5), 1.0, d * Math.sqrt(maxSmoothArea / area));
-        const cappedArea = vp1.width * k * vp1.height * k * d * d;
-        if (cappedArea > 6e7) d *= Math.sqrt(6e7 / cappedArea);
-        // Ensure unzoomed (Fit Page / normal view) and zoomed views render at crisp >= 2.5x backing density up to 22MP
-        const desiredD = k < 1.35 ? Math.max(dOv * 2.25, 2.5) : Math.max(dOv * 1.75, 2.0);
-        const desiredArea = vp1.width * k * vp1.height * k * desiredD * desiredD;
-        const maxCrispArea = 2.2e7;
-        d = desiredArea > maxCrispArea
-          ? Math.max(d, Math.sqrt(maxCrispArea / Math.max(1, vp1.width * k * vp1.height * k)))
-          : Math.max(d, desiredD);
+        area = vp1.width * k * vp1.height * k * d * d;
+        if (area > 6e7) d *= Math.sqrt(6e7 / area);
         dOv = d;
         const logicalWidth = vp1.width * k, logicalHeight = vp1.height * k;
         const targetW = Math.max(1, Math.round(logicalWidth * d));
@@ -1824,13 +1846,16 @@ async function renderPage() {
         const ovW = Math.max(1, Math.round(logicalWidth * dOv));
         const ovH = Math.max(1, Math.round(logicalHeight * dOv));
         if (E._lastRenderDoc === doc && E._lastRenderKey === renderKey && cv && cv.width === targetW && cv.height === targetH) {
-          E.vp = vp1; E.d = dOv;
+          E.vp = vp1; E.d = dOv; E._lastRenderPage = E.cur;
           if (o.width !== ovW || o.height !== ovH) { o.width = ovW; o.height = ovH; }
           cv.style.width = o.style.width = logicalWidth + 'px';
           cv.style.height = o.style.height = logicalHeight + 'px';
+          const tl = $('#etl');
+          if (tl) { tl.style.width = logicalWidth + 'px'; tl.style.height = logicalHeight + 'px'; tl.style.setProperty('--scale-factor', k); }
           syncPrintRuler(vp1, logicalWidth);
           $('#ePg').value = E.cur + 1; if ($('#eZoomBadge')) $('#eZoomBadge').textContent = Math.round(E.zoom * 100) + '%'; markThumbs(); overlay(); hideSelBar();
           updateDocInspector(); syncHudBar();
+          if (typeof schedulePdfVectorSharpen === 'function') schedulePdfVectorSharpen(25);
           if (E.inlineText) syncInlineTextEditorStyle(); if (E.inlineTable) syncInlineTableEditorStyle();
           continue;
         }
@@ -1846,18 +1871,21 @@ async function renderPage() {
           const cvCtx = cv.getContext('2d');
           cvCtx.drawImage(cachedPage.canvas, 0, 0);
           E._lastRenderDoc = doc;
+          E._lastRenderPage = E.cur;
           E._lastRenderKey = renderKey;
+          const tl = $('#etl');
+          if (tl) { tl.style.width = logicalWidth + 'px'; tl.style.height = logicalHeight + 'px'; tl.style.setProperty('--scale-factor', k); }
           $('#ePg').value = E.cur + 1; if ($('#eZoomBadge')) $('#eZoomBadge').textContent = Math.round(E.zoom * 100) + '%'; markThumbs(); overlay(); hideSelBar();
           updateDocInspector(); syncHudBar();
+          if (typeof schedulePdfVectorSharpen === 'function') schedulePdfVectorSharpen(25);
           if (E.inlineText) syncInlineTextEditorStyle(); if (E.inlineTable) syncInlineTableEditorStyle();
           if (E.lastCur !== E.cur) { $('#eview').scrollTop = 0; $('#eview').scrollLeft = 0; E.lastCur = E.cur; }
           buildTextLayer(page, vp1, k, tok);
           continue;
         }
         const effScale = k * d;
-        const minHiScale = Math.min(4.0, Math.sqrt(2.0e7 / Math.max(1, vp1.width * vp1.height)));
-        const useHiSuperSample = effScale < minHiScale * 0.88;
-        const renderScale = useHiSuperSample ? minHiScale : effScale;
+        const useHiSuperSample = false;
+        const renderScale = effScale;
         const vp = page.getViewport({ scale: renderScale });
         if (tok !== E.tok || doc !== E.doc) continue;
         off = document.createElement('canvas');
@@ -1913,10 +1941,12 @@ async function renderPage() {
         }
         E._pageCanvasCache.set(renderKey, { doc, canvas: off });
         E._lastRenderDoc = doc;
+        E._lastRenderPage = E.cur;
         E._lastRenderKey = renderKey;
         off = null;
         $('#ePg').value = E.cur + 1; if ($('#eZoomBadge')) $('#eZoomBadge').textContent = Math.round(E.zoom * 100) + '%'; markThumbs(); overlay(); hideSelBar();
         updateDocInspector(); syncHudBar();
+        if (typeof schedulePdfVectorSharpen === 'function') schedulePdfVectorSharpen(35);
         if (E.inlineText) syncInlineTextEditorStyle(); if (E.inlineTable) syncInlineTableEditorStyle();
         if (E.lastCur !== E.cur) {
           const prevCur = E.lastCur;
@@ -1949,6 +1979,7 @@ function autoZoom(v) {
 }
 function fit(mode) {
   if (!E.doc) return;
+  if (typeof cancelEditorHq === 'function') cancelEditorHq();
   E.fitMode = mode === 'width' ? 'width' : 'page';
   const ev = $('#eview');
   if (ev) {
@@ -1981,22 +2012,25 @@ if (typeof ResizeObserver !== 'undefined' && $('#eview')) {
     }
   }).observe($('#eview'));
 }
-const goto = i => { if (!E.doc) return; E.cur = Math.max(0, Math.min(E.n - 1, i)); E.pages = new Set([E.cur]); E.sel = null; renderPage(); };
+const goto = i => { if (!E.doc) return; if (typeof cancelEditorHq === 'function') cancelEditorHq(); E.cur = Math.max(0, Math.min(E.n - 1, i)); E.pages = new Set([E.cur]); E.sel = null; renderPage(); };
 $('#ePrev').onclick = () => goto(E.cur - 1); $('#eNext').onclick = () => goto(E.cur + 1);
 $('#ePg').onchange = e => goto((+e.target.value || 1) - 1);
 let _zoomRaf = 0;
 let _pendingZoomAnchor = null;
 
-function applySmoothZoomStep(newZoom, clientX, clientY, debounceMs = 115) {
+function applySmoothZoomStep(newZoom, clientX, clientY, debounceMs = 95) {
   if (!E.doc) return;
   const ev = $('#eview'), wrap = $('#ewrap');
   const prevZoom = clampEdZoom(E.zoom);
   const prevK = prevZoom * 4 / 3;
-  const nextZoom = clampEdZoom(Math.max(0.05, Math.min(6, newZoom)));
+  const nextZoom = clampEdZoom(newZoom);
   if (Math.abs(nextZoom - prevZoom) < 1e-4 && !E.fitMode) return;
   E.fitMode = null;
   E.zoom = nextZoom;
   E._zooming = true;
+
+  // Immediately hide & cancel stale #ehq vector tile so it never freezes/glitches over #ecv during zoom
+  if (typeof cancelEditorHq === 'function') cancelEditorHq();
 
   if (ev && wrap && E.vp) {
     const evRect = ev.getBoundingClientRect();
@@ -2021,24 +2055,18 @@ function applySmoothZoomStep(newZoom, clientX, clientY, debounceMs = 115) {
         const k = K(), lw = Math.round(E.vp.width * k), lh = Math.round(E.vp.height * k);
         const cv = $('#ecv'), o = $('#eov'), tl = $('#etl');
         if (cv) { cv.style.width = lw + 'px'; cv.style.height = lh + 'px'; }
-        if (o) {
-          o.style.width = lw + 'px'; o.style.height = lh + 'px';
-          const ovD = E.d || Math.max(DPR(), 2.0);
-          const nextOvW = Math.max(1, Math.round(lw * ovD)), nextOvH = Math.max(1, Math.round(lh * ovD));
-          if (nextOvW * nextOvH <= 1.6e7) {
-            if (o.width !== nextOvW || o.height !== nextOvH) { o.width = nextOvW; o.height = nextOvH; }
-            E.d = ovD;
-            overlay();
-          }
-        }
+        // GPU CSS-scale #eov during active zoom instead of reallocating/clearing backing canvas every frame!
+        if (o) { o.style.width = lw + 'px'; o.style.height = lh + 'px'; }
         if (tl) { tl.style.width = lw + 'px'; tl.style.height = lh + 'px'; tl.style.setProperty('--scale-factor', k); }
         syncPrintRuler(E.vp, lw);
         if (E.inlineText) syncInlineTextEditorStyle();
         if (E.inlineTable) syncInlineTableEditorStyle();
         if (ev && wrap && _pendingZoomAnchor) {
           const a = _pendingZoomAnchor;
-          ev.scrollLeft = Math.max(0, Math.round(wrap.offsetLeft + a.docX * k - a.fx));
-          ev.scrollTop = Math.max(0, Math.round(wrap.offsetTop + a.docY * k - a.fy));
+          const maxL = Math.max(0, ev.scrollWidth - ev.clientWidth);
+          const maxT = Math.max(0, ev.scrollHeight - ev.clientHeight);
+          ev.scrollLeft = Math.max(0, Math.min(maxL, Math.round(wrap.offsetLeft + a.docX * k - a.fx)));
+          ev.scrollTop = Math.max(0, Math.min(maxT, Math.round(wrap.offsetTop + a.docY * k - a.fy)));
         }
       }
       if ($('#eZoomBadge')) $('#eZoomBadge').textContent = Math.round(E.zoom * 100) + '%';
@@ -2050,6 +2078,35 @@ function applySmoothZoomStep(newZoom, clientX, clientY, debounceMs = 115) {
   clearTimeout(E._wheelZoomT);
   E._wheelZoomT = setTimeout(() => {
     E._zooming = false;
+    const cv = $('#ecv'), o = $('#eov'), tl = $('#etl');
+    // Zero-flicker fast-path for BOTH zoom-in AND zoom-out on an already-rendered page!
+    // Eliminates top/bottom scroll jumps & canvas reallocation flashes on zoom-out.
+    const isZoomInFast = (E.zoom >= 1.25 && E._lastRenderDoc === E.doc && E._lastRenderPage === E.cur && cv && cv.width > 0 && E.vp);
+    if (isZoomInFast || (E._lastRenderDoc === E.doc && E._lastRenderPage === E.cur && cv && cv.width > 0 && E.vp)) {
+      const k = K(), lw = Math.round(E.vp.width * k), lh = Math.round(E.vp.height * k);
+      const baseDensity = cv.width / Math.max(1, lw);
+      const needsCrispRerender = (E.zoom < 1.25 && baseDensity < Math.max(1.25, DPR() * 0.9));
+      if (!needsCrispRerender) {
+        cv.style.width = lw + 'px'; cv.style.height = lh + 'px';
+        if (o) {
+          let ovD = Math.max(DPR(), 1.5);
+          const ovArea = lw * lh * ovD * ovD;
+          if (ovArea > 1.6e7) ovD = Math.max(0.5, ovD * Math.sqrt(1.6e7 / ovArea));
+          const nextOvW = Math.max(1, Math.round(lw * ovD)), nextOvH = Math.max(1, Math.round(lh * ovD));
+          if (o.width !== nextOvW || o.height !== nextOvH) { o.width = nextOvW; o.height = nextOvH; }
+          o.style.width = lw + 'px'; o.style.height = lh + 'px';
+          E.d = ovD;
+          overlay();
+        }
+        if (tl) { tl.style.width = lw + 'px'; tl.style.height = lh + 'px'; tl.style.setProperty('--scale-factor', k); }
+        if (E.zoom >= 1.20 && typeof sharpenEditorViewport === 'function') {
+          sharpenEditorViewport();
+        } else if (typeof cancelEditorHq === 'function') {
+          cancelEditorHq();
+        }
+        return;
+      }
+    }
     renderPage();
   }, debounceMs);
 }
@@ -2081,12 +2138,105 @@ if ($('#eZoomPreset')) {
   $('#eZoomPreset').onchange = e => {
     const v = e.target.value;
     if (v === 'page' || v === 'width') fit(v);
-    else applySmoothZoomStep(Math.max(.1, Math.min(6, +v || 1)), null, null, 50);
+    else applySmoothZoomStep(clampEdZoom(+v || 1), null, null, 50);
   };
 }
 
 // ---------- thumbnails ----------
 let io;
+// ---------- Ultra-HD Viewport Vector Sharpening (#ehq) — Razor-Sharp Even Zoomed Into 1 Word ----------
+let _ehqTimer = null, _ehqTok = 0, _ehqTask = null;
+function cancelEditorHq() {
+  clearTimeout(_ehqTimer);
+  _ehqTok++;
+  if (_ehqTask && typeof _ehqTask.cancel === 'function') {
+    try { _ehqTask.cancel(); } catch (_) {}
+  }
+  _ehqTask = null;
+  const ehq = $('#ehq');
+  if (ehq) { ehq.hidden = true; ehq.width = 0; ehq.height = 0; ehq._lastKey = ''; }
+}
+async function sharpenEditorViewport() {
+  const ehq = $('#ehq'), ev = $('#eview'), ew = $('#ewrap'), cv = $('#ecv');
+  if (!ehq || !ev || !ew || !cv || !E.doc || !E.vp || ew.hidden || E._zooming) return;
+  const k = K(), dpr = Math.min(3.5, Math.max(DPR() * 1.5, 2.5));
+  const logicalW = E.vp.width * k, logicalH = E.vp.height * k;
+  const curDensity = cv.width / Math.max(1, logicalW);
+  // Activate viewport vector tile whenever zoomed in or base canvas density is below ultra-HD target
+  if (E.zoom < 1.25 && curDensity >= dpr * 0.90) {
+    ehq.hidden = true;
+    return;
+  }
+  const evRect = ev.getBoundingClientRect();
+  const ewRect = ew.getBoundingClientRect();
+  // Overscan by 120px on each side so small pans/scrolls stay crisp without revealing tile seams
+  const pad = 120;
+  const visLeft = Math.max(0, evRect.left - ewRect.left - pad);
+  const visTop = Math.max(0, evRect.top - ewRect.top - pad);
+  const visRight = Math.min(logicalW, evRect.right - ewRect.left + pad);
+  const visBottom = Math.min(logicalH, evRect.bottom - ewRect.top + pad);
+  const visW = Math.max(0, visRight - visLeft);
+  const visH = Math.max(0, visBottom - visTop);
+  if (visW < 8 || visH < 8) { ehq.hidden = true; return; }
+
+  // Cap tile backing to 16MP (ultra-HD crisp vector text even at 6400% zoom onto 1 single word!)
+  let tileDpr = dpr;
+  const rawPx = visW * tileDpr * visH * tileDpr;
+  if (rawPx > 16e6) tileDpr *= Math.sqrt(16e6 / rawPx);
+  const tw = Math.max(1, Math.round(visW * tileDpr));
+  const th = Math.max(1, Math.round(visH * tileDpr));
+  const key = `${E.cur}|${k.toFixed(4)}|${Math.round(visLeft)},${Math.round(visTop)}|${tw}x${th}`;
+  if (!ehq.hidden && ehq._lastKey === key) return;
+
+  if (_ehqTask && typeof _ehqTask.cancel === 'function') {
+    try { _ehqTask.cancel(); } catch (_) {}
+    _ehqTask = null;
+  }
+  const myTok = ++_ehqTok;
+  const doc = E.doc;
+  try {
+    const page = await doc.getPage(E.cur + 1);
+    if (myTok !== _ehqTok || doc !== E.doc) return;
+    const renderScale = k * tileDpr;
+    const vpFull = page.getViewport({ scale: renderScale });
+    const off = document.createElement('canvas');
+    off.width = tw; off.height = th;
+    const octx = off.getContext('2d', { alpha: false });
+    octx.fillStyle = '#ffffff';
+    octx.fillRect(0, 0, tw, th);
+    const ox = -visLeft * tileDpr;
+    const oy = -visTop * tileDpr;
+    const rt = page.render({ canvasContext: octx, viewport: vpFull, transform: [1, 0, 0, 1, ox, oy] });
+    _ehqTask = rt;
+    await rt.promise;
+    if (_ehqTask === rt) _ehqTask = null;
+    if (myTok !== _ehqTok || doc !== E.doc) { off.width = 0; off.height = 0; return; }
+
+    ehq.width = tw; ehq.height = th;
+    ehq.style.left = visLeft + 'px';
+    ehq.style.top = visTop + 'px';
+    ehq.style.width = visW + 'px';
+    ehq.style.height = visH + 'px';
+    const hctx = ehq.getContext('2d', { alpha: false });
+    hctx.drawImage(off, 0, 0);
+    off.width = 0; off.height = 0;
+    ehq._lastKey = key;
+    ehq.hidden = false;
+  } catch (_) {}
+}
+function schedulePdfVectorSharpen(delayMs = 60) {
+  clearTimeout(_ehqTimer);
+  _ehqTimer = setTimeout(() => { sharpenEditorViewport(); }, delayMs);
+}
+if (typeof window !== 'undefined') {
+  window.sharpenEditorViewport = sharpenEditorViewport;
+  if ($('#eview')) {
+    $('#eview').addEventListener('scroll', () => {
+      if (E.doc && !E._zooming && E.zoom >= 1.25) schedulePdfVectorSharpen(45);
+    }, { passive: true });
+  }
+}
+
 async function thumbs() {
   const box = $('#thumbs');
   if (box) box.querySelectorAll('canvas').forEach(cv => { cv.width = 0; cv.height = 0; });
@@ -3747,7 +3897,13 @@ function setTool(t) {
   else if (t === 'multisel') st('Ordered Multi-Select (1·2·3·4) active — click Word 1, Word 2, Word 3, Word 4 in any sequence. Your exact selection order is locked and never re-sorted!');
   else if (t === 'edittext') st('Edit PDF Text active — click on any text on the PDF page to edit it in-place right on the page!');
   else if (t === 'hand') st('Hand tool active — drag anywhere on the page to pan.');
-  else if (t === 'draw') st(`Freehand Pen active (${savedSize}px) — drag on the page to draw, or adjust Pen Width in the ribbon.`);
+  else if (t === 'draw') {
+    if (!E.bytes && ops && typeof ops.blank === 'function') {
+      ops.blank().then(() => st(`Created blank A4 PDF — Freehand Pen active (${savedSize}px), drag on the page to draw!`));
+    } else {
+      st(`Freehand Pen active (${savedSize}px) — drag on the page to draw, or adjust Pen Width in the ribbon.`);
+    }
+  }
   else if (t === 'poly') st('Polygon/Polyline tool — click points on the page, double-click or press Enter to finish.');
   else if (t === 'area') st('Area Measurement tool — drag a rectangle or click polygon vertices (double-click or Enter to finish).');
   else if (t === 'eraser') st(`Eraser active (${E.eraserMode === 'brush' ? 'Brush Radius' : 'Whole Markup'}, ${savedSize}px) — click or drag over any markup to erase.`);
@@ -4603,9 +4759,16 @@ function cancelInlineTextEditor() {
   st('Cancelled text edit.');
 }
 
-const ov = $('#eov'); const pt = e => [e.offsetX / K(), e.offsetY / K()];
+const ov = $('#eov');
+const pt = e => {
+  const r = ov.getBoundingClientRect();
+  const scaleK = K() || 1;
+  return [(e.clientX - r.left) / scaleK, (e.clientY - r.top) / scaleK];
+};
 ov.onpointerdown = async e => {
-  if (!E.doc) return; const [x, y] = pt(e), col = $('#eColor').value, size = +$('#eSize').value || 2, t = E.tool;
+  if (e.button === 2) return;
+  if (!E.doc) return;
+  const [x, y] = pt(e), col = $('#eColor').value, size = +$('#eSize').value || 2, t = E.tool;
   if (t === 'hand' || e.button === 1) {
     const ev = $('#eview');
     E.pan = { sx: e.clientX, sy: e.clientY, sl: ev.scrollLeft, st: ev.scrollTop };
@@ -4843,7 +5006,12 @@ ov.onpointerdown = async e => {
   }
   if (t === 'stamp') { if (!E.stamp) return; const fs = 20, c = _scratchCtx; c.font = `bold ${fs}px Helvetica,Arial,sans-serif`; const w = c.measureText(E.stamp.text).width + 28, h = 34; addAnn({ t: 'stamp', x: x - w / 2, y: y - h / 2, w, h, fs, text: E.stamp.text, color: E.stamp.color }); E.stamp = null; setTool('select'); return; }
   if (t === 'chl' || t === 'cul' || t === 'cst') E.tmp = { t: 'crect', x, y, w: 0, h: 0, ox: x, oy: y, color: col, size: 1, kind: t };
-  else if (t === 'draw') E.tmp = { t: 'draw', pts: [[x, y]], color: col, size, dash: $('#eDash') ? $('#eDash').value : 'solid' };
+  else if (t === 'draw') {
+    E.sel = null;
+    const penOp = Math.max(0.1, Math.min(1, (+($('#eOp') && $('#eOp').value) || 100) / 100));
+    E.tmp = { t: 'draw', pts: [[x, y]], color: col, size, op: penOp, dash: $('#eDash') ? $('#eDash').value : 'solid' };
+    overlay();
+  }
   else if (t === 'line' || t === 'arrow' || t === 'leader') {
     if (E._lineClickMode && E.tmp && (E.tmp.t === t)) {
       E.tmp.x2 = x; E.tmp.y2 = y;
@@ -4900,6 +5068,7 @@ ov.onpointermove = e => {
   if (E.tool === 'multisel') { const wIt = wordAt(x, y) || itemAt(x, y); if (wIt !== E.hov) { E.hov = wIt; scheduleOverlay(); } return; }
   if (E.tool === 'edittext') { const it = itemAt(x, y); if (it !== E.hov) { E.hov = it; scheduleOverlay(); } return; }
   if (E.drag && E.sel) {
+    if (E.sel.locked) return;
     E.drag.moved = true;
     if (E.drag.hdl) {
       const o = E.drag.orig, dx = x - E.drag.x, dy = y - E.drag.y, m = E.drag.hdl;
@@ -4942,7 +5111,12 @@ ov.onpointermove = e => {
     return;
   }
   const a = E.tmp; if (!a) return;
-  if (a.t === 'draw') a.pts.push([x, y]);
+  if (a.t === 'draw') {
+    const lastPt = a.pts[a.pts.length - 1];
+    if (!lastPt || Math.hypot(x - lastPt[0], y - lastPt[1]) >= 0.45) {
+      a.pts.push([x, y]);
+    }
+  }
   else if ('x1' in a) { a.x2 = x; a.y2 = y; }
   else {
     let w = Math.abs(x - a.ox), h = Math.abs(y - a.oy);
@@ -5075,7 +5249,25 @@ ov.onpointerup = async () => {
     return;
   }
   E._lineClickMode = false;
-  if (w > 2 || h > 2 || a.t === 'draw') { delete a.ox; delete a.oy; addAnn(a); } else overlay();
+  if (a.t === 'draw') {
+    delete a.ox; delete a.oy;
+    addAnn(a);
+    if (E.tool === 'draw') { E.sel = null; overlay(); }
+  } else if (w > 2 || h > 2) { delete a.ox; delete a.oy; addAnn(a); } else overlay();
+};
+ov.onpointercancel = () => {
+  if (E.tmp && E.tmp.t === 'draw' && Array.isArray(E.tmp.pts) && E.tmp.pts.length >= 1) {
+    const finDraw = E.tmp;
+    E.tmp = null;
+    addAnn(finDraw);
+    if (E.tool === 'draw') { E.sel = null; overlay(); }
+  } else {
+    E.tmp = null;
+    E.pan = null;
+    E.drag = null;
+    E.erasing = false;
+    overlay();
+  }
 };
 
 function finishPolygonTool() {
@@ -5168,6 +5360,7 @@ function duplicateSelectedAnn() {
   delete copy.img;
   copy._loadingImg = false;
   if (E.sel.img && typeof E.sel.img === 'object' && ('complete' in E.sel.img || (typeof HTMLCanvasElement !== 'undefined' && E.sel.img instanceof HTMLCanvasElement))) copy.img = E.sel.img;
+  copy.locked = false;
   if (copy.t === 'pin') copy.pinNum = E.nextPinNum++;
   moveAnn(copy, 14, 14);
   if (copy.t === 'meas' || copy.t === 'area') {
@@ -5222,6 +5415,7 @@ addEventListener('keydown', e => {
     delete copy.img;
     copy._loadingImg = false;
     if (E.clip.img && typeof E.clip.img === 'object' && ('complete' in E.clip.img || (typeof HTMLCanvasElement !== 'undefined' && E.clip.img instanceof HTMLCanvasElement))) copy.img = E.clip.img;
+    copy.locked = false;
     moveAnn(copy, 14, 14);
     addAnn(copy);
     st('Pasted annotation');
@@ -5771,15 +5965,25 @@ if ($('#rp-launch-compare')) $('#rp-launch-compare').onclick = () => window.setV
 
 // ---------- open, save ----------
 async function pickEditor() {
-  const f = (await window.native.openFiles({
-    title: 'Open PDF, AutoCAD DXF, or Image in Studio',
+  const picked = await window.native.openFiles({
+    title: 'Open One or Multiple PDFs, DXFs, or Images in Studio',
+    multi: true,
     filters: [
       { name: 'PDF, AutoCAD DXF & Images', extensions: ['pdf', 'dxf', 'png', 'jpg', 'jpeg', 'webp', 'bmp'] },
       { name: 'PDF Documents', extensions: ['pdf'] },
       { name: 'AutoCAD DXF Drawings', extensions: ['dxf'] },
       { name: 'Images (Auto-Convert to PDF)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }
     ]
-  }))[0];
+  });
+  if (!picked || !picked.length) return;
+  for (let pi = 0; pi < picked.length; pi++) {
+    const f = picked[pi];
+    if (!f) continue;
+    await openPickedEditorEntry(f);
+  }
+  if (picked.length > 1) st(`Opened ${picked.length} files in PDF Studio tabs.`);
+}
+async function openPickedEditorEntry(f) {
   if (!f) return;
   if (/\.dxf$/i.test(f.name) && typeof DXFEngine !== 'undefined' && document.body && document.body.dataset.view === 'edit') {
     try {
@@ -5787,7 +5991,7 @@ async function pickEditor() {
       const dxfText = DXFEngine.decodeDXFBytes ? DXFEngine.decodeDXFBytes(rawBytes) : new TextDecoder().decode(rawBytes);
       const parser = new DXFEngine.DXFParser(dxfText).parse();
       const vecBytes = await parser.toVectorPDFBytes({ background: '#ffffff', lineWidth: 1.0, showGrid: false, canvasW: 2200, canvasH: 1600, padding: 48 });
-      await openBytes(vecBytes, f.name.replace(/\.dxf$/i, '.pdf'), f.path);
+      await openBytes(vecBytes, f.name.replace(/\.dxf$/i, '.pdf'), null);
     } catch (e) {
       st('Could not open DXF (' + f.name + '): ' + (e.message || e));
       if (window.showToast) window.showToast('Could not open DXF (' + f.name + '): ' + (e.message || e), 4000);
@@ -5867,6 +6071,7 @@ Object.assign(ACT, {
       if (cm) { E.selC = null; RPNotePreview.hide(true); delC(cm); return true; }
     }
     if (!E.sel) return false;
+    if (E.sel.locked) { st('Selected markup is locked. Unlock it first to delete.'); return false; }
     pushAnnState('Delete annotation');
     const l = E.ann[E.cur] || [], lm = E.meas[E.cur] || [], gs = E.sel, same = a => a === gs || (gs.g && a.g === gs.g);
     E.ann[E.cur] = l.filter(a => !same(a));

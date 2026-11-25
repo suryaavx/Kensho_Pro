@@ -379,9 +379,9 @@
       const stepX = dx / numScallops;
       const stepY = dy / numScallops;
 
-      // Normal vector pointing outward (CW polygon: outward is normal to the right)
-      const nx = -dy / segLen;
-      const ny = dx / segLen;
+      // Normal vector pointing outward in Y-down canvas coordinates (CW polygon)
+      const nx = dy / segLen;
+      const ny = -dx / segLen;
       const bulge = scallopSize * 0.45;
 
       let curX = p1.x;
@@ -627,7 +627,7 @@
     const raw = String(rawText || '').trim();
     const prefixMatch = raw.match(/^([⌀ØR]|Dia\.?)/i);
     const prefix = prefixMatch ? prefixMatch[1] : '';
-    const unitMatch = raw.match(/\b(mm|mils?|in|um|µm|deg|°|Ω|kΩ|µF|pF|nF|V|A)\b/i);
+    const unitMatch = raw.match(/(?:^|[\s\d])(mm|mils?|in|um|µm|deg|°|k?Ω|µF|pF|nF|V|A)(?=$|[\s,;)/])/i);
     const unit = unitMatch ? unitMatch[1] : 'mm';
 
     // Bilateral ± tolerance: e.g. "25.40 ± 0.05" or "25.40 +/- 0.05"
@@ -745,9 +745,9 @@
 
   function buildGDTControlFrameCompartments(spec = {}) {
     const sym = spec.symbol || '⌖';
-    const prefix = spec.diaPrefix || '⌀';
+    const prefix = spec.diaPrefix != null ? spec.diaPrefix : '⌀';
     const tol = spec.tolerance || '0.05';
-    const mod = spec.modifier || 'Ⓜ';
+    const mod = spec.modifier != null ? spec.modifier : 'Ⓜ';
     const comps = [sym, `${prefix}${tol}${mod ? ' ' + mod : ''}`.trim()];
     if (spec.datumA) comps.push(String(spec.datumA).trim());
     if (spec.datumB) comps.push(String(spec.datumB).trim());

@@ -1,5 +1,11 @@
 :root{--bg:#0d1117;--panel:#131820;--panel2:#0f141b;--line:#212936;--line2:#2e3a4d;--ink:#e6edf3;--mute:#919eab;--mute2:#697689;--btn:#19212c;--btnh:#222d3d;--vp:#080b10;--sel:#162840;--hov:#17202b;--r:#f85149;--g:#2ea043;--y:#d29922;--ca:#e11d48;--cb:#10b981;--acc:#2f81f7;--shadow:0 10px 28px rgba(0,0,0,.55);color-scheme:dark}
 :root[data-theme="light"]{--bg:#f1f5f9;--panel:#ffffff;--panel2:#f8fafc;--line:#e2e8f0;--line2:#cbd5e1;--ink:#0f172a;--mute:#475569;--mute2:#64748b;--btn:#f1f5f9;--btnh:#e2e8f0;--vp:#dde3ec;--sel:#e0f2fe;--hov:#f1f5f9;--r:#dc2626;--g:#15803d;--y:#b45309;--ca:#e11d48;--cb:#059669;--acc:#0284c7;--shadow:0 8px 24px rgba(15,23,42,.12);color-scheme:light}
+:root[data-theme="autocad"]{--bg:#16191e;--panel:#1d2128;--panel2:#181c22;--line:#2a303a;--line2:#38404d;--ink:#eef2f6;--mute:#9aa5b4;--mute2:#738091;--btn:#242933;--btnh:#2f3644;--vp:#0d1014;--sel:#103247;--hov:#232934;--r:#ff3b5c;--g:#22c55e;--y:#f59e0b;--ca:#ff2a4b;--cb:#00f0ff;--acc:#00d4ff;--shadow:0 10px 28px rgba(0,0,0,.60);color-scheme:dark}
+:root[data-theme="solidworks"]{--bg:#e6ecf4;--panel:#f8fafd;--panel2:#eef3f9;--line:#cfd9e6;--line2:#b6c5d8;--ink:#0f1d30;--mute:#42566e;--mute2:#627892;--btn:#e9f0f8;--btnh:#d8e4f2;--vp:#d6e0ec;--sel:#cfe3ff;--hov:#e3ecf7;--r:#dc2626;--g:#15803d;--y:#b45309;--ca:#e11d48;--cb:#0066ff;--acc:#1d4ed8;--shadow:0 8px 24px rgba(15,29,48,.14);color-scheme:light}
+:root[data-theme="blueprint"]{--bg:#061120;--panel:#0a1a30;--panel2:#081528;--line:#153154;--line2:#1f4473;--ink:#e6f2ff;--mute:#8cb4dc;--mute2:#5d87b3;--btn:#0e2442;--btnh:#16345c;--vp:#040c17;--sel:#123c69;--hov:#10294a;--r:#ff4d6d;--g:#34d399;--y:#fbbf24;--ca:#ff2a4b;--cb:#00f0ff;--acc:#38bdf8;--shadow:0 12px 30px rgba(0,8,20,.65);color-scheme:dark}
+:root[data-theme="nord"]{--bg:#1e2430;--panel:#252c3b;--panel2:#212734;--line:#323b4e;--line2:#434e66;--ink:#eceff4;--mute:#a6b1c5;--mute2:#7b88a1;--btn:#2c3445;--btnh:#374156;--vp:#171c26;--sel:#2e465c;--hov:#2d3648;--r:#bf616a;--g:#a3be8c;--y:#ebcb8b;--ca:#f87171;--cb:#88c0d0;--acc:#88c0d0;--shadow:0 10px 26px rgba(0,0,0,.45);color-scheme:dark}
+:root[data-theme="amber"]{--bg:#13110e;--panel:#1b1814;--panel2:#161410;--line:#2d2720;--line2:#3f362c;--ink:#f5efe6;--mute:#b3a594;--mute2:#877968;--btn:#241f1a;--btnh:#322b23;--vp:#0b0a08;--sel:#3b2c15;--hov:#26211b;--r:#ef4444;--g:#22c55e;--y:#f59e0b;--ca:#ff3b30;--cb:#f59e0b;--acc:#f59e0b;--shadow:0 10px 28px rgba(0,0,0,.62);color-scheme:dark}
+:root[data-theme="emerald"]{--bg:#091410;--panel:#0e1d17;--panel2:#0b1813;--line:#1a3329;--line2:#264739;--ink:#e6f4ee;--mute:#8cb4a4;--mute2:#5d8777;--btn:#132820;--btnh:#1b382c;--vp:#050d0a;--sel:#134232;--hov:#142c23;--r:#f87171;--g:#10b981;--y:#fbbf24;--ca:#ff2a4b;--cb:#10b981;--acc:#10b981;--shadow:0 10px 28px rgba(0,12,8,.62);color-scheme:dark}
 *{box-sizing:border-box}html,body{height:100%;margin:0}[hidden]{display:none!important}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:13px "Segoe UI","Inter","Ubuntu","Cantarell","Liberation Sans",system-ui,-apple-system,sans-serif;user-select:none}
 input,textarea{user-select:text}
@@ -29,9 +35,20 @@ input[type=number]{width:58px;padding:3px 5px}input[type=color]{width:34px;heigh
   #docname,.brand .rp-pub{display:none}
   #rp-top-status,#modes{margin-left:auto}
 }
-#modes{display:flex;gap:2px;background:var(--btn);border:1px solid var(--line2);border-radius:7px;padding:2px}
-#modes button{border:0;background:transparent;border-radius:5px;padding:4px 14px;font-weight:600}#modes button.on{background:var(--ink);color:var(--bg)}
-.dd{position:fixed;z-index:30;min-width:240px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow);padding:5px}
+#modes{display:flex;gap:2px;background:var(--btn);border:1px solid var(--line2);border-radius:7px;padding:2px;flex-wrap:nowrap;flex-shrink:0}
+#modes button{border:0;background:transparent;border-radius:5px;padding:4px 12px;font-weight:600;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:5px}#modes button.on{background:var(--ink);color:var(--bg)}
+@media (max-width: 1120px){#modes button{padding:4px 8px;font-size:12px}}
+#theme-preset-sel{height:28px;font-size:11.5px;padding:2px 6px;border-radius:6px;background:var(--btn);color:var(--ink);border:1px solid var(--line2);max-width:138px}
+.sw-shell{background:var(--bg)!important;color:var(--ink)!important}
+.sw-ribbon{background:var(--panel)!important;border-bottom:1px solid var(--line)!important}
+.sw-aside{background:var(--panel2)!important;border-color:var(--line)!important;color:var(--ink)!important}
+.sw-tree-hdr{padding:6px 6px 8px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink)}
+.sw-tree-sec{margin-top:8px;padding:3px 6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--acc)}
+.sw-tree-item{padding:4px 6px;border-radius:5px;font-size:11.5px;color:var(--ink);transition:background .12s ease}
+.sw-tree-item:hover{background:var(--hov)}
+.sw-tree-item.on{background:var(--sel);color:var(--ink);font-weight:600}
+.sw-pm-input{width:100%;height:24px;font-size:11px;background:var(--btn)!important;color:var(--ink)!important;border:1px solid var(--line2)!important;border-radius:4px;padding:2px 6px}
+.dd{position:fixed;z-index:10002;min-width:240px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow);padding:5px}
 .mi{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;text-align:left;padding:6px 10px;border-radius:5px}
 .mi:hover:not(:disabled){background:var(--btnh)}.mi:disabled{opacity:.4;cursor:default}.mi .ic{width:16px;height:16px;color:var(--mute)}.mi .k{margin-left:auto;color:var(--mute2);font-size:12px;padding-left:24px}.mi .ck{width:16px;color:var(--acc)}
 .msep{height:1px;background:var(--line);margin:4px 6px}.mh{padding:4px 10px;color:var(--mute2);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
@@ -72,7 +89,9 @@ footer{display:flex;justify-content:space-between;padding:3px 10px;background:va
 .th.cur{border-color:var(--y)}.th.sel{background:var(--sel)}.th.over{border-top-color:var(--ca)}
 #eview{flex:1;position:relative;overflow:auto;background:var(--vp)}
 #ewrap{position:relative;margin:20px auto;width:max-content}#ewrap canvas{display:block;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35)}
-#ewrap #eov{position:absolute;left:0;top:0;touch-action:none;background:transparent;box-shadow:none}
+#ewrap #ecv{position:relative;z-index:1}
+#ewrap #ehq{position:absolute;left:0;top:0;pointer-events:none;z-index:2;background:transparent;box-shadow:none}
+#ewrap #eov{position:absolute;left:0;top:0;z-index:4;touch-action:none;background:transparent;box-shadow:none}
 body.night #ecv{filter:invert(1) hue-rotate(180deg)}
 #etools{width:300px}#pTools,#pComments{padding:8px 12px 14px;overflow:auto;flex:1}
 #etools h4{margin:12px 0 6px;font-size:11px;color:var(--mute2);text-transform:uppercase;letter-spacing:.06em}
@@ -99,7 +118,7 @@ body.night #ecv{filter:invert(1) hue-rotate(180deg)}
 #printarea{display:none}
 @media print{body>*:not(#printarea){display:none!important}#printarea{display:block}#printarea img{display:block;width:100%;page-break-after:always}@page{margin:0}}
 
-#etl{position:absolute;left:0;top:0;overflow:hidden;line-height:1;user-select:text;-webkit-user-select:text}
+#etl{position:absolute;left:0;top:0;z-index:3;overflow:hidden;line-height:1;user-select:text;-webkit-user-select:text}
 #etl span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0;user-select:text}
 #etl ::selection{background:rgba(26,115,232,.38);color:transparent}
 #selbar{position:fixed;z-index:25;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow);padding:3px}
@@ -8301,7 +8320,7 @@ html[data-theme="light"] {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(225, 29, 72, 0.45) !important;
   border-radius: 8px !important;
   overflow: hidden !important;
-  background: var(--bg1) !important;
+  background: var(--panel) !important;
 }
 
 /* On-Canvas 3D ViewCube & Multi-Angle Projection HUD */
@@ -10132,7 +10151,7 @@ html[data-theme="light"][data-cad-palette] {
 #top #modes button:not(.on):hover,
 .kdock-qbtn:not(.on):hover,
 .kdock-lbtn:not(.on):hover {
-  background: var(--card2) !important;
+  background: var(--btnh) !important;
   color: var(--ink) !important;
 }
 
@@ -10175,16 +10194,16 @@ html[data-theme="light"][data-cad-palette] {
 .rp-tab-btn.active,
 #view-edit #edit-ribbon-tabs .rp-tab-btn.active,
 #view-dxf #dxf-studio-tabs .rp-tab-btn.active {
-  background: var(--bg2) !important;
+  background: var(--panel2) !important;
   border-top: 2px solid var(--acc) !important;
   border-bottom: 2px solid transparent !important;
   color: var(--acc-bright) !important;
   box-shadow: none !important;
 }
 
-body.theme-light .rp-tab-btn.active,
-body.theme-light #view-edit #edit-ribbon-tabs .rp-tab-btn.active,
-body.theme-light #view-dxf #dxf-studio-tabs .rp-tab-btn.active {
+:root[data-theme="light"] .rp-tab-btn.active,
+:root[data-theme="light"] #view-edit #edit-ribbon-tabs .rp-tab-btn.active,
+:root[data-theme="light"] #view-dxf #dxf-studio-tabs .rp-tab-btn.active {
   background: #ffffff !important;
   border-top: 2px solid var(--acc) !important;
   border-bottom: 2px solid transparent !important;
@@ -10211,9 +10230,9 @@ body.theme-light #view-dxf #dxf-studio-tabs .rp-tab-btn.active {
   box-shadow: inset 0 0 0 1px var(--acc) !important;
 }
 
-body.theme-light .tb.on,
-body.theme-light .dxf-st-tool.on,
-body.theme-light .ed-tool-btn.on {
+:root[data-theme="light"] .tb.on,
+:root[data-theme="light"] .dxf-st-tool.on,
+:root[data-theme="light"] .ed-tool-btn.on {
   background: rgba(2, 132, 199, 0.14) !important;
   border-color: var(--acc) !important;
   color: var(--acc) !important;
@@ -10248,3 +10267,888 @@ body:not([data-view="dxf"]) #dxf-props-dock.is-floating {
 
 /* Pause expensive blur/transitions during OS maximize/fullscreen transitions */
 body.is-resizing *, body.is-resizing *::before, body.is-resizing *::after { transition: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+
+/* === KENSHO PRO WORKSTATION UI REDESIGN v1.2.3 === */
+
+/* 1. Crisp Thin CAD Scrollbars & Accessible Focus Rings */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.48); background-clip: content-box; }
+:root[data-theme="light"] *::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.22); background-clip: content-box; }
+:root[data-theme="light"] *::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.38); background-clip: content-box; }
+
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--acc) !important;
+  outline-offset: 1px;
+}
+
+/* 2. Unified Top Bar & Segmented Studio Switcher (#modes) */
+#top {
+  min-height: 38px !important;
+  padding: 4px 10px !important;
+  gap: 8px !important;
+  border-bottom: 1px solid var(--line) !important;
+}
+
+#modes {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 2px !important;
+  border-radius: 7px !important;
+  background: rgba(127, 127, 127, 0.12) !important;
+  border: 1px solid var(--line) !important;
+}
+
+#modes button {
+  height: 26px !important;
+  padding: 0 11px !important;
+  border-radius: 5px !important;
+  border: 1px solid transparent !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+#modes button.on {
+  background: var(--panel2) !important;
+  border-color: var(--acc) !important;
+  color: var(--acc-bright, var(--acc)) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22) !important;
+}
+
+:root[data-theme="light"] #modes button.on {
+  background: #ffffff !important;
+  color: var(--acc) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Top-bar Command Palette Search Trigger Pill */
+.kp-cmd-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px 0 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(127, 127, 127, 0.10);
+  color: var(--mute);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+.kp-cmd-trigger:hover {
+  border-color: var(--acc);
+  color: var(--ink);
+  background: rgba(127, 127, 127, 0.16);
+}
+.kp-cmd-trigger-ic { font-size: 13px; opacity: 0.85; }
+.kp-cmd-trigger kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--mute);
+}
+
+/* 3. Architectural CAD Start Screens (#empty, #eempty) */
+#empty, #eempty {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+#empty .rp-empty-hero,
+#eempty .rp-empty-hero {
+  border-radius: 8px !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28) !important;
+  background: var(--panel) !important;
+}
+
+:root[data-theme="light"] #empty .rp-empty-hero,
+:root[data-theme="light"] #eempty .rp-empty-hero {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+  background: #ffffff !important;
+}
+
+#empty .rp-launchpad-badge,
+#eempty .rp-launchpad-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.09em !important;
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--mute) !important;
+}
+
+#empty .rp-launchpad-title,
+#eempty .rp-launchpad-title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+  margin-top: 6px !important;
+}
+
+#empty .rp-ws-slot,
+#eempty .rp-ws-slot {
+  border-radius: 6px !important;
+  border: 1px dashed var(--line) !important;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+#empty .rp-ws-slot:hover,
+#eempty .rp-ws-slot:hover {
+  border-style: solid !important;
+  border-color: var(--acc) !important;
+}
+
+.kp-recent-strip {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.kp-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.kp-recent-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--mute);
+}
+.kp-recent-clear {
+  background: transparent;
+  border: none;
+  color: var(--mute);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.kp-recent-clear:hover { color: var(--ink); background: rgba(127, 127, 127, 0.14); }
+.kp-recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kp-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  font-size: 11.5px;
+  max-width: 240px;
+}
+.kp-recent-ext {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--acc);
+}
+.kp-recent-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+/* 4. Frosted Bottom-Center Floating Viewport HUD */
+.rp-floating-hud {
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+}
+:root[data-theme="light"] .rp-floating-hud {
+  background: rgba(255, 255, 255, 0.90) !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12) !important;
+}
+
+/* 5. Unified Bottom Workstation Status Bar */
+.kp-statusbar {
+  flex: 0 0 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  color: var(--mute);
+  font-size: 11px;
+  user-select: none;
+  z-index: 40;
+}
+.kp-sb-left, .kp-sb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.kp-sb-item {
+  background: transparent;
+  border: none;
+  color: var(--mute);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.kp-sb-item:hover {
+  background: rgba(127, 127, 127, 0.14);
+  color: var(--ink);
+}
+.kp-sb-studio {
+  color: var(--acc-bright, var(--acc));
+  font-weight: 700;
+}
+.kp-sb-doc {
+  cursor: default;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kp-sb-doc:hover { background: transparent; color: var(--mute); }
+.kp-sb-item.is-active {
+  background: var(--sel);
+  color: var(--acc-bright, var(--acc));
+  font-weight: 600;
+}
+.kp-sb-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--line);
+  opacity: 0.7;
+}
+.kp-sb-kbd-hint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+}
+.kp-sb-ver {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  opacity: 0.8;
+  padding-left: 2px;
+}
+
+/* 6. Global Command Palette (Ctrl+K) */
+.kp-cmd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  background: rgba(4, 8, 15, 0.56);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 11vh;
+}
+.kp-cmd-overlay[hidden] { display: none !important; }
+.kp-cmd-modal {
+  width: min(580px, 92vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.kp-cmd-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel2);
+}
+.kp-cmd-search-ic { font-size: 16px; color: var(--acc); }
+.kp-cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 13.5px;
+  outline: none !important;
+}
+.kp-cmd-esc {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--mute);
+}
+.kp-cmd-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.kp-cmd-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.kp-cmd-item:hover,
+.kp-cmd-item.is-selected {
+  background: var(--sel);
+  border-color: var(--acc);
+}
+.kp-cmd-cat {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  min-width: 52px;
+}
+.kp-cmd-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid var(--acc);
+  flex-shrink: 0;
+}
+.kp-cmd-title { flex: 1; font-weight: 500; }
+.kp-cmd-kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  background: var(--panel2);
+}
+.kp-cmd-empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--mute);
+  font-size: 12px;
+}
+.kp-cmd-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--mute);
+  font-size: 11px;
+}
+.kp-cmd-footer kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  margin-right: 3px;
+}
+
+/* 7. Toast Notification Stack */
+.kp-toast-host {
+  position: fixed;
+  right: 14px;
+  bottom: 36px;
+  z-index: 99980;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.kp-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.kp-toast.is-visible { opacity: 1; transform: translateY(0); }
+.kp-toast-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--acc);
+}
+
+/* 8. Zen Focus Mode & Compact CAD Density */
+body.kp-zen-mode #menubar,
+body.kp-zen-mode .rp-ribbon-tabs,
+body.kp-zen-mode #edit-ribbon-tabs,
+body.kp-zen-mode #dxf-studio-tabs {
+  display: none !important;
+}
+body.kp-zen-mode #top {
+  min-height: 32px !important;
+  padding: 2px 8px !important;
+}
+
+body.kp-density-compact #top { min-height: 33px !important; padding: 2px 8px !important; }
+body.kp-density-compact #modes button { height: 23px !important; padding: 0 9px !important; font-size: 11px !important; }
+body.kp-density-compact .tb,
+body.kp-density-compact .dxf-st-tool,
+body.kp-density-compact .ed-tool-btn {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  font-size: 11px !important;
+}
+body.kp-density-compact .kp-statusbar { flex: 0 0 22px; height: 22px; font-size: 10.5px; }
+
+
+/* === KENSHO PRO PERFORMANCE & COMPOSITOR OPTIMIZATION === */
+#stage { will-change: transform; }
+#list, #thumbs, #pages, .kp-cmd-list { contain: layout style; }
+
+/* Pause expensive blur/shadows/transitions during active pan/zoom to eliminate Chromium jank */
+body.kp-interacting .rp-floating-hud,
+body.kp-interacting .kp-cmd-overlay,
+body.kp-interacting .kdock-pane,
+body.kp-interacting * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: none !important;
+}
+
+.kp-sb-mem {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+}
+
+
+/* === TOP BAR NO-OVERLAP RESPONSIVE FIX === */
+#top {
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+}
+#menubar {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+#modes {
+  margin-left: 0 !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+#sw-studio-host:not([hidden]) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+@media (max-width: 1360px) {
+  .kp-cmd-trigger-lbl { display: none !important; }
+  .kp-cmd-trigger { padding: 0 7px !important; gap: 4px !important; }
+  #top-settings-btn span { display: none !important; }
+  #theme-preset-sel { max-width: 128px !important; }
+}
+@media (max-width: 1120px) {
+  #modes button { padding: 0 7px !important; font-size: 11px !important; }
+  #theme-preset-sel { max-width: 104px !important; }
+}
+
+
+/* === KENSHO PRO UI BUGFIX SWEEP v1.2.3 === */
+
+/* 1. Exact 100vh Desktop Frame — Never Show Outer Page Scrollbars */
+html, body {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 2. Top Bar (#top): Pure Flexbox Flow (Eliminates #modes position:absolute Overlap with Help & Ctrl+K)
+      + Theme-Aware Background (Replaces Hardcoded Blue Gradient)
+      + overflow: visible so #menubar Dropdowns Never Get Clipped */
+#top {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 0 10px !important;
+  background: var(--panel) !important;
+  border-bottom: 1px solid var(--line) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  z-index: 60 !important;
+}
+
+#top #modes {
+  position: static !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 auto !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 2px !important;
+  background: rgba(127, 127, 127, 0.12) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 7px !important;
+}
+
+#top #modes button {
+  height: 26px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  border-radius: 5px !important;
+  border: 1px solid transparent !important;
+  white-space: nowrap !important;
+}
+
+#top #modes button.on,
+#top #modes button[data-v="compare"].on,
+#top #modes button[data-v="edit"].on,
+#top #modes button[data-v="dxf"].on,
+#top #modes button#nav-solidworks.on {
+  background: var(--acc) !important;
+  border-color: var(--acc) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Keep crisp dark ink on bright yellow/amber active tab for WCAG contrast */
+:root[data-theme="amber"] #top #modes button.on,
+:root[data-cad-palette="amber"] #top #modes button.on,
+body[data-theme-preset="amber"] #top #modes button.on {
+  color: #0c0a09 !important;
+}
+
+#top .grow {
+  flex: 1 1 8px !important;
+  min-width: 4px !important;
+}
+
+#top #menubar {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+#top #theme-preset-sel {
+  height: 26px !important;
+  max-width: 146px !important;
+  flex-shrink: 1 !important;
+  min-width: 92px !important;
+}
+
+/* 3. Bottom Status Bar Isolation (Never Distorted by Generic View Footer Rules) */
+#kp-statusbar {
+  flex: 0 0 25px !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  max-height: 25px !important;
+  padding: 0 10px !important;
+  background: var(--panel) !important;
+  border-top: 1px solid var(--line) !important;
+  z-index: 45 !important;
+}
+
+/* 4. SolidWorks 3D Studio Light/Dark Theme Fidelity */
+#sw-studio-host .sw-ribbon select,
+#sw-studio-host .sw-ribbon input[type="number"],
+#sw-studio-host .sw-aside select,
+#sw-studio-host .sw-aside input {
+  background: var(--panel2) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
+}
+:root[data-theme="light"] #sw-studio-host .sw-shell { background: var(--bg) !important; color: var(--ink) !important; }
+:root[data-theme="light"] #sw-studio-host .sw-ribbon,
+:root[data-theme="light"] #sw-studio-host .sw-aside { background: var(--panel) !important; color: var(--ink) !important; }
+
+/* === Curated Workstation Theme Precedence Overrides (wins over base :root !important) === */
+:root[data-theme="autocad"] {
+  --bg: #16191e !important; --panel: #1d2128 !important; --panel2: #181c22 !important; --panel3: #242933 !important;
+  --line: #2a303a !important; --line2: #38404d !important; --ink: #eef2f6 !important; --fg: #eef2f6 !important;
+  --mute: #9aa5b4 !important; --mute2: #738091 !important; --btn: #242933 !important; --btnh: #2f3644 !important;
+  --vp: #0d1014 !important; --sel: #103247 !important; --hov: #232934 !important;
+  --acc: #00d4ff !important; --accent: #00d4ff !important; --acc-bright: #38e8ff !important;
+  --ca: #ff2a4b !important; --cb: #00f0ff !important; color-scheme: dark;
+}
+:root[data-theme="solidworks"] {
+  --bg: #e6ecf4 !important; --panel: #f8fafd !important; --panel2: #eef3f9 !important; --panel3: #e1eaf5 !important;
+  --line: #cfd9e6 !important; --line2: #b6c5d8 !important; --ink: #0f1d30 !important; --fg: #0f1d30 !important;
+  --mute: #42566e !important; --mute2: #627892 !important; --btn: #e9f0f8 !important; --btnh: #d8e4f2 !important;
+  --vp: #d6e0ec !important; --sel: #cfe3ff !important; --hov: #e3ecf7 !important;
+  --acc: #1d4ed8 !important; --accent: #1d4ed8 !important; --acc-bright: #2563eb !important;
+  --ca: #e11d48 !important; --cb: #0066ff !important; color-scheme: light;
+}
+:root[data-theme="blueprint"] {
+  --bg: #061120 !important; --panel: #0a1a30 !important; --panel2: #081528 !important; --panel3: #0e2442 !important;
+  --line: #153154 !important; --line2: #1f4473 !important; --ink: #e6f2ff !important; --fg: #e6f2ff !important;
+  --mute: #8cb4dc !important; --mute2: #5d87b3 !important; --btn: #0e2442 !important; --btnh: #16345c !important;
+  --vp: #040c17 !important; --sel: #123c69 !important; --hov: #10294a !important;
+  --acc: #38bdf8 !important; --accent: #38bdf8 !important; --acc-bright: #7dd3fc !important;
+  --ca: #ff2a4b !important; --cb: #00f0ff !important; color-scheme: dark;
+}
+:root[data-theme="nord"] {
+  --bg: #1e2430 !important; --panel: #252c3b !important; --panel2: #212734 !important; --panel3: #2c3445 !important;
+  --line: #323b4e !important; --line2: #434e66 !important; --ink: #eceff4 !important; --fg: #eceff4 !important;
+  --mute: #a6b1c5 !important; --mute2: #7b88a1 !important; --btn: #2c3445 !important; --btnh: #374156 !important;
+  --vp: #171c26 !important; --sel: #2e465c !important; --hov: #2d3648 !important;
+  --acc: #88c0d0 !important; --accent: #88c0d0 !important; --acc-bright: #8fbcbb !important;
+  --ca: #f87171 !important; --cb: #88c0d0 !important; color-scheme: dark;
+}
+:root[data-theme="amber"] {
+  --bg: #13110e !important; --panel: #1b1814 !important; --panel2: #161410 !important; --panel3: #241f1a !important;
+  --line: #2d2720 !important; --line2: #3f362c !important; --ink: #f5efe6 !important; --fg: #f5efe6 !important;
+  --mute: #b3a594 !important; --mute2: #877968 !important; --btn: #241f1a !important; --btnh: #322b23 !important;
+  --vp: #0b0a08 !important; --sel: #3b2c15 !important; --hov: #26211b !important;
+  --acc: #f59e0b !important; --accent: #f59e0b !important; --acc-bright: #fbbf24 !important;
+  --ca: #ff3b30 !important; --cb: #f59e0b !important; color-scheme: dark;
+}
+:root[data-theme="emerald"] {
+  --bg: #091410 !important; --panel: #0e1d17 !important; --panel2: #0b1813 !important; --panel3: #132820 !important;
+  --line: #1a3329 !important; --line2: #264739 !important; --ink: #e6f4ee !important; --fg: #e6f4ee !important;
+  --mute: #8cb4a4 !important; --mute2: #5d8777 !important; --btn: #132820 !important; --btnh: #1b382c !important;
+  --vp: #050d0a !important; --sel: #134232 !important; --hov: #142c23 !important;
+  --acc: #10b981 !important; --accent: #10b981 !important; --acc-bright: #34d399 !important;
+  --ca: #ff2a4b !important; --cb: #10b981 !important; color-scheme: dark;
+}
+
+/* === LAYOUT POLISH (Preserves All Theme Colours & Visuals) === */
+#top #menubar { flex-shrink: 0 !important; overflow: visible !important; }
+#top { gap: 6px !important; overflow-x: auto !important; overflow-y: visible !important; scrollbar-width: none !important; }
+#top::-webkit-scrollbar { display: none; }
+@media (max-width: 1180px) {
+  #top #menubar .mb { padding: 3px 5px !important; font-size: 11px !important; }
+  #top #modes button { padding: 0 7px !important; font-size: 11px !important; }
+  #top #theme-preset-sel { max-width: 112px !important; }
+}
+.rp-ws-slots { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important; gap: 10px !important; width: 100% !important; }
+.rp-ws-slot { display: flex !important; flex-direction: column !important; align-items: stretch !important; justify-content: space-between !important; gap: 10px !important; min-width: 0 !important; overflow: hidden !important; }
+.rp-ws-slot-meta { min-width: 0 !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
+.rp-ws-slot .rp-sample-btn { width: 100% !important; max-width: 100% !important; white-space: normal !important; line-height: 1.25 !important; justify-content: center !important; text-align: center !important; box-sizing: border-box !important; }
+
+#sw-studio-tabs.sw-ribbon-tabs { display: flex !important; align-items: center !important; gap: 2px !important; padding: 2px 10px 0 !important; background: var(--panel2) !important; border-bottom: 1px solid var(--line) !important; overflow-x: auto !important; overflow-y: hidden !important; flex-shrink: 0 !important; scrollbar-width: none !important; }
+#sw-studio-tabs.sw-ribbon-tabs::-webkit-scrollbar { display: none; }
+#sw-studio-tabs .rp-tab-btn { white-space: nowrap !important; flex-shrink: 0 !important; }
+#sw-studio-tabs .sw-dock-toggle.on { border-color: var(--acc) !important; color: var(--acc-bright, var(--acc)) !important; }
+#sw-studio-ribbon.sw-ribbon { display: flex !important; flex-wrap: nowrap !important; align-items: stretch !important; gap: 0 !important; padding: 4px 8px !important; min-height: 54px !important; background: var(--panel) !important; border-bottom: 1px solid var(--line) !important; overflow-x: auto !important; overflow-y: hidden !important; flex-shrink: 0 !important; scrollbar-width: thin !important; }
+#sw-studio-ribbon .sw-grp { display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; flex-shrink: 0 !important; padding: 2px 10px !important; border-right: 1px solid var(--line) !important; gap: 4px !important; }
+#sw-studio-ribbon .sw-grp:last-child { border-right: none !important; }
+#sw-studio-ribbon .sw-grp[hidden] { display: none !important; }
+#sw-studio-ribbon .sw-grp-row { display: flex !important; align-items: center !important; gap: 5px !important; flex-wrap: nowrap !important; }
+#sw-studio-ribbon .sw-grp .gl { font-size: 9.5px !important; font-weight: 700 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; color: var(--mute2) !important; line-height: 1 !important; }
+#sw-studio-host .sw-aside.is-collapsed { display: none !important; }
+
+/* === GPU OPENGL COMPOSITED VIEWPORT LAYERS (ALL 4 STUDIOS) === */
+#cv, #ecv, #eov, #dxf-st-canvas, #sw-canvas {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* === SOLIDWORKS LIVE GPU/FPS HUD & RIGHT-CLICK CONTEXT MENU === */
+.sw-fps-hud {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  z-index: 15;
+  font: 600 10.5px/1.3 "JetBrains Mono", "Cascadia Code", monospace;
+  color: var(--acc-bright, var(--acc));
+  background: var(--panel);
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  padding: 4px 9px;
+  opacity: 0.92;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+}
+.sw-fps-hud[hidden] { display: none !important; }
+.sw-ctx-menu {
+  z-index: 10020 !important;
+  min-width: 230px !important;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+/* ---- Thinking Orbs Animation Containers (Jakubantalik/thinking-orbs) ---- */
+.rp-ring.rp-orb-active,
+.rp-stage-reticle.rp-orb-active {
+  border: none !important;
+  animation: none !important;
+  background: transparent !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  height: auto !important;
+}
+.thinking-orb-canvas {
+  display: block;
+  pointer-events: none;
+}
+
+
+/* ===== SolidWorks Ribbon Icons, Smooth GPU Animations, Right-Click Menu & Multi-File Tabs ===== */
+.sw-ribbon .tb.sw-anim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  will-change: transform;
+}
+.sw-ribbon .tb.sw-anim-btn i,
+.sw-ribbon .tb.sw-anim-btn svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), color 140ms ease;
+}
+.sw-ribbon .tb.sw-anim-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.22);
+}
+.sw-ribbon .tb.sw-anim-btn:hover i,
+.sw-ribbon .tb.sw-anim-btn:hover svg {
+  transform: scale(1.12);
+}
+.sw-ribbon .tb.sw-anim-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+.sw-ribbon-tabs .rp-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 140ms ease, color 140ms ease, transform 120ms ease;
+}
+.sw-ribbon-tabs .rp-tab-btn i,
+.sw-ribbon-tabs .rp-tab-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.sw-ctx-menu {
+  position: fixed !important;
+  z-index: 99999 !important;
+  min-width: 228px;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--panel, #141923);
+  border: 1px solid var(--line2, #2b3444);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.48);
+  animation: swCtxFadeIn 110ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes swCtxFadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sw-doc-tabs,
+.dxf-doc-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--panel2, #11161f);
+  border-bottom: 1px solid var(--line, #232b38);
+  overflow-x: auto;
+  flex: none;
+}
+.sw-doc-tab,
+.dxf-doc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mute, #94a3b8);
+  background: var(--btn, rgba(148, 163, 184, 0.08));
+  border: 1px solid var(--line, #263042);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 130ms ease, color 130ms ease, border-color 130ms ease;
+}
+.sw-doc-tab:hover,
+.dxf-doc-tab:hover {
+  color: var(--ink, #f1f5f9);
+  border-color: var(--acc, #3b82f6);
+}
+.sw-doc-tab.active,
+.dxf-doc-tab.active {
+  color: #ffffff;
+  background: var(--acc, #2563eb);
+  border-color: var(--acc, #3b82f6);
+}
+.sw-doc-tab-x,
+.dxf-doc-tab-x {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  opacity: 0.72;
+}
+.sw-doc-tab-x:hover,
+.dxf-doc-tab-x:hover {
+  opacity: 1;
+}

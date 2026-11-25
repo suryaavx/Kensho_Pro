@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Kensho Pro 1.2.3 — Universal Linux Setup & Desktop Integration Installer
+# Kensho Pro 1.2.3.2 — Universal Linux Setup & Desktop Integration Installer
 # Supports Ubuntu, Debian, Fedora, RHEL, Arch, openSUSE, Linux Mint, Pop!_OS
 #
 # Usage:
@@ -14,7 +14,7 @@ set -e
 APP_NAME="Kensho Pro"
 APP_ID="in.textportdocx.kenshopro"
 LEGACY_APP_ID="in.textportdocx.redlinepro"
-VERSION="1.2.3"
+VERSION="1.2.3.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 MODE="auto"
@@ -111,20 +111,20 @@ if [ -f "$SCRIPT_DIR/LICENSE.txt" ] && [ "$(cd "$SCRIPT_DIR" && pwd)" != "$REAL_
   cp -f "$SCRIPT_DIR/LICENSE.txt" "$INSTALL_DIR/LICENSE.txt"
 fi
 
-# Create wrapper launcher script that handles --no-sandbox and file arguments
+# Create wrapper launcher script that handles and file arguments
 cat > "$INSTALL_DIR/launch-kensho-pro.sh" << 'LAUNCH_EOF'
 #!/usr/bin/env bash
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -x "$SELF_DIR/kensho-pro" ]; then
-  exec "$SELF_DIR/kensho-pro" --no-sandbox "$@"
+  exec "$SELF_DIR/kensho-pro" "$@"
 elif [ -x "$SELF_DIR/Kensho Pro" ]; then
-  exec "$SELF_DIR/Kensho Pro" --no-sandbox "$@"
+  exec "$SELF_DIR/Kensho Pro" "$@"
 elif [ -x "$SELF_DIR/redline-pro" ]; then
-  exec "$SELF_DIR/redline-pro" --no-sandbox "$@"
+  exec "$SELF_DIR/redline-pro" "$@"
 elif [ -x "$SELF_DIR/node_modules/.bin/electron" ]; then
-  exec "$SELF_DIR/node_modules/.bin/electron" "$SELF_DIR" --no-sandbox "$@"
+  exec "$SELF_DIR/node_modules/.bin/electron" "$SELF_DIR" "$@"
 elif command -v electron >/dev/null 2>&1; then
-  exec electron "$SELF_DIR" --no-sandbox "$@"
+  exec electron "$SELF_DIR" "$@"
 else
   echo "Error: Kensho Pro binary or Electron runtime not found in $SELF_DIR" >&2
   exit 1
@@ -143,6 +143,8 @@ ln -sf "$INSTALL_DIR/launch-kensho-pro.sh" "$BIN_DIR/kensho-pro"
 # Install 512x512 application icon
 if [ -f "$INSTALL_DIR/build/icon.png" ]; then
   cp -f "$INSTALL_DIR/build/icon.png" "$ICON_DIR/$APP_ID.png"
+elif [ -f "$INSTALL_DIR/resources/build/icon.png" ]; then
+  cp -f "$INSTALL_DIR/resources/build/icon.png" "$ICON_DIR/$APP_ID.png"
 elif [ -f "$SCRIPT_DIR/build/icon.png" ]; then
   cp -f "$SCRIPT_DIR/build/icon.png" "$ICON_DIR/$APP_ID.png"
 fi
@@ -150,6 +152,8 @@ fi
 # Install XDG MIME package definition (.kensho, .redline, .dxf, .gbr, .drl, .ipc)
 if [ -f "$INSTALL_DIR/build/linux/$APP_ID.xml" ]; then
   cp -f "$INSTALL_DIR/build/linux/$APP_ID.xml" "$MIME_DIR/packages/$APP_ID.xml"
+elif [ -f "$INSTALL_DIR/resources/build/linux/$APP_ID.xml" ]; then
+  cp -f "$INSTALL_DIR/resources/build/linux/$APP_ID.xml" "$MIME_DIR/packages/$APP_ID.xml"
 elif [ -f "$SCRIPT_DIR/build/linux/$APP_ID.xml" ]; then
   cp -f "$SCRIPT_DIR/build/linux/$APP_ID.xml" "$MIME_DIR/packages/$APP_ID.xml"
 fi

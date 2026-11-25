@@ -37,7 +37,10 @@
     { v: 35, l: '0.35 mm' },
     { v: 50, l: '0.50 mm' },
     { v: 70, l: '0.70 mm' },
-    { v: 100, l: '1.00 mm' }
+    { v: 100, l: '1.00 mm' },
+    { v: 140, l: '1.40 mm' },
+    { v: 158, l: '1.58 mm' },
+    { v: 211, l: '2.11 mm' }
   ];
 
   const BUILTIN_CAD_BLOCKS = {
@@ -141,6 +144,10 @@
     chamferDist1: 5.0,
     chamferDist2: 5.0,
     polygonSides: 6,
+    triangleWidth: 60.0,
+    triangleHeight: 50.0,
+    triangleType: 'isosceles', // 'isosceles' | 'right-left' | 'right-right' | 'equilateral'
+    triangleFixedSize: false,
     donutInnerR: 3.0,
     donutOuterR: 8.0,
     box3dHeight: 18.0,
@@ -166,6 +173,8 @@
     lastMeasureResult: null,
     activeBlockName: 'FIDUCIAL_TARGET',
     layerSearch: '',
+    openDocs: [],
+    activeDocId: null,
     // Viewport transform: screenX = panX + worldX * zoom, screenY = canvasH - (panY + worldY * zoom)
     zoom: 4.0,
     panX: 120,
@@ -380,12 +389,14 @@
       toast('Nothing to undo in DXF Studio.');
       return false;
     }
-    const parser = getActiveParser();
-    const ds = getDXFState();
-    if (parser && ds) {
-      StudioState.redoStack.push(createParserSnapshot('Redo', parser, ds));
-    }
     const snap = StudioState.undoStack.pop();
+    const ds = getDXFState();
+    const targetParser = (snap && snap.parserRef) || (ds && snap && snap.slot === 'A' ? ds.parsedA : (ds && snap && snap.slot === 'B' ? ds.parsedB : null)) || getActiveParser();
+    if (targetParser && ds) {
+      const redoSnap = createParserSnapshot(snap ? snap.label : 'Redo', targetParser, ds);
+      if (snap && snap.slot) redoSnap.slot = snap.slot;
+      StudioState.redoStack.push(redoSnap);
+    }
     applySnapshot(snap);
     updateUndoRedoButtons();
     logCommand(`Undone: ${snap.label}`);
@@ -399,12 +410,14 @@
       toast('Nothing to redo in DXF Studio.');
       return false;
     }
-    const parser = getActiveParser();
-    const ds = getDXFState();
-    if (parser && ds) {
-      StudioState.undoStack.push(createParserSnapshot('Undo', parser, ds));
-    }
     const snap = StudioState.redoStack.pop();
+    const ds = getDXFState();
+    const targetParser = (snap && snap.parserRef) || (ds && snap && snap.slot === 'A' ? ds.parsedA : (ds && snap && snap.slot === 'B' ? ds.parsedB : null)) || getActiveParser();
+    if (targetParser && ds) {
+      const undoSnap = createParserSnapshot(snap ? snap.label : 'Undo', targetParser, ds);
+      if (snap && snap.slot) undoSnap.slot = snap.slot;
+      StudioState.undoStack.push(undoSnap);
+    }
     applySnapshot(snap);
     updateUndoRedoButtons();
     logCommand(`Redone: ${snap.label}`);
@@ -1708,17 +1721,26 @@
   function trimEntityAtPoint(ent, wx, wy, parser) {
     if (!ent || !parser || isLayerLocked(parser, ent.layer)) return false;
     if (ent.type === 'LWPOLYLINE' && Array.isArray(ent.points) && ent.points.length >= 2) {
-      // Explode polyline into lines, then trim the clicked segment
       const parts = explodeEntity(ent, parser);
-      if (parts.length) {
-        const idx = parser.entities.indexOf(ent);
-        if (idx !== -1) parser.entities.splice(idx, 1, ...parts);
-        const closest = parts.reduce((best, p) => {
+      const lineParts = parts.filter(p => p && p.type === 'LINE');
+      if (lineParts.length) {
+        const closest = lineParts.reduce((best, p) => {
           const d = distToSegment(wx, wy, p.x1, p.y1, p.x2, p.y2);
           return (!best || d < best.d) ? { p, d } : best;
         }, null);
-        if (closest && closest.p) return trimEntityAtPoint(closest.p, wx, wy, parser);
+        if (closest && closest.p) {
+          const idx = parser.entities.indexOf(ent);
+          if (idx !== -1) parser.entities.splice(idx, 1, ...parts);
+          const trimmed = trimEntityAtPoint(closest.p, wx, wy, parser);
+          if (!trimmed && idx !== -1) {
+            const removeSet = new Set(parts);
+            parser.entities = parser.entities.filter(e => !removeSet.has(e));
+            parser.entities.splice(Math.min(idx, parser.entities.length), 0, ent);
+          }
+          return trimmed;
+        }
       }
+      return false;
     }
     if (ent.type === 'LINE') {
       const ts = [0, 1];
@@ -1853,6 +1875,7 @@
    */
   function filletTwoLines(line1, line2, radius, parser) {
     if (!line1 || !line2 || line1.type !== 'LINE' || line2.type !== 'LINE' || !parser) return false;
+    if (isLayerLocked(parser, line1.layer) || isLayerLocked(parser, line2.layer)) return false;
     const ix = lineLineIntersection(line1.x1, line1.y1, line1.x2, line1.y2, line2.x1, line2.y1, line2.x2, line2.y2, true);
     if (!ix) return false;
 
@@ -1940,6 +1963,7 @@
    */
   function chamferTwoLines(line1, line2, d1, d2, parser) {
     if (!line1 || !line2 || line1.type !== 'LINE' || line2.type !== 'LINE' || !parser) return false;
+    if (isLayerLocked(parser, line1.layer) || isLayerLocked(parser, line2.layer)) return false;
     const ix = lineLineIntersection(line1.x1, line1.y1, line1.x2, line1.y2, line2.x1, line2.y1, line2.x2, line2.y2, true);
     if (!ix) return false;
     const dist1 = Math.max(0, Number(d1 != null ? d1 : StudioState.chamferDist1) || 0);
@@ -1987,6 +2011,137 @@
   /**
    * Create Regular N-Sided AutoCAD Polygon (3 .. 36 sides)
    */
+  function buildTrianglePoints(x0, y0, width, height, triType = 'isosceles') {
+    const w = Math.max(0.1, Math.abs(Number(width) || 60));
+    const tType = triType || StudioState.triangleType || 'isosceles';
+    const h = tType === 'equilateral'
+      ? (w * Math.sqrt(3) / 2)
+      : Math.max(0.1, Math.abs(Number(height) || 50));
+    const sgnX = (Number(width) < 0) ? -1 : 1;
+    const sgnY = (Number(height) < 0) ? -1 : 1;
+    const x1 = x0;
+    const x2 = x0 + w * sgnX;
+    const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+    const baseY = y0;
+    const apexY = y0 + h * sgnY;
+    let apexX = (minX + maxX) * 0.5;
+    if (tType === 'right-left') apexX = minX;
+    else if (tType === 'right-right') apexX = maxX;
+    return [
+      [minX, baseY, 0],
+      [maxX, baseY, 0],
+      [apexX, apexY, 0]
+    ];
+  }
+
+  function createTriangleEntity(x0, y0, width = null, height = null, triType = null) {
+    const tType = triType || StudioState.triangleType || 'isosceles';
+    const w = width != null ? Number(width) : (StudioState.triangleWidth || 60);
+    const h = height != null ? Number(height) : (StudioState.triangleHeight || 50);
+    const pts = buildTrianglePoints(x0, y0, w, h, tType);
+    return syncGeom({
+      ...createBaseEntityProps('LWPOLYLINE'),
+      closed: true,
+      _shapeKind: 'triangle',
+      triType: tType,
+      elevation: StudioState.defaultElevation || 0,
+      thickness: StudioState.defaultThickness || 0,
+      points: pts
+    });
+  }
+
+  function detectShapeKind(ent) {
+    if (!ent || ent.type !== 'LWPOLYLINE' || !ent.closed || !Array.isArray(ent.points)) return null;
+    if (ent.points.length === 3) return 'triangle';
+    if (ent.points.length === 4) {
+      const xs = ent.points.map(p => p[0]), ys = ent.points.map(p => p[1]);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const tol = Math.max(1e-3, Math.max(maxX - minX, maxY - minY) * 1e-4);
+      const isAxisRect = ent.points.every(p =>
+        (Math.abs(p[0] - minX) <= tol || Math.abs(p[0] - maxX) <= tol) &&
+        (Math.abs(p[1] - minY) <= tol || Math.abs(p[1] - maxY) <= tol)
+      );
+      if (isAxisRect && (maxX - minX) > 1e-4 && (maxY - minY) > 1e-4) return 'rect';
+    }
+    return null;
+  }
+
+  function resizeTriangleEntity(ent, newW, newH, newType = null) {
+    if (!ent || !Array.isArray(ent.points) || ent.points.length !== 3) return false;
+    const xs = ent.points.map(p => p[0]), ys = ent.points.map(p => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const curW = Math.max(0.1, maxX - minX);
+    const curH = Math.max(0.1, maxY - minY);
+    const w = Math.max(0.1, Number.isFinite(Number(newW)) && Number(newW) > 0 ? Number(newW) : curW);
+    const tType = newType || ent.triType || 'isosceles';
+    const h = tType === 'equilateral'
+      ? (w * Math.sqrt(3) / 2)
+      : Math.max(0.1, Number.isFinite(Number(newH)) && Number(newH) > 0 ? Number(newH) : curH);
+    const cx = (minX + maxX) * 0.5;
+    ent.triType = tType;
+    ent._shapeKind = 'triangle';
+    ent.points = buildTrianglePoints(cx - w * 0.5, minY, w, h, tType);
+    syncGeom(ent);
+    return true;
+  }
+
+  function resizeRectEntity(ent, newW, newH) {
+    if (!ent || !Array.isArray(ent.points) || ent.points.length !== 4) return false;
+    const xs = ent.points.map(p => p[0]), ys = ent.points.map(p => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = Math.max(0.1, Number.isFinite(Number(newW)) && Number(newW) > 0 ? Number(newW) : (maxX - minX));
+    const h = Math.max(0.1, Number.isFinite(Number(newH)) && Number(newH) > 0 ? Number(newH) : (maxY - minY));
+    ent.points = [
+      [minX, minY, 0],
+      [minX + w, minY, 0],
+      [minX + w, minY + h, 0],
+      [minX, minY + h, 0]
+    ];
+    syncGeom(ent);
+    return true;
+  }
+
+  function setActiveLineweight(lwVal, applyToSelection = true) {
+    const v = parseInt(lwVal, 10);
+    if (!Number.isFinite(v)) return;
+    StudioState.activeLineweight = v;
+    if ($('#dxf-st-lw-sel')) $('#dxf-st-lw-sel').value = String(v);
+    if ($('#dxf-st-lw-sel-lyr')) $('#dxf-st-lw-sel-lyr').value = String(v);
+    const p = getActiveParser();
+    if (applyToSelection && p && StudioState.selectedIds.size > 0) {
+      const sel = p.entities.filter(ent => StudioState.selectedIds.has(ent._id) && !isLayerLocked(p, ent.layer));
+      if (sel.length) {
+        pushUndoSnapshot('Change Entity Thickness / Lineweight');
+        sel.forEach(ent => { ent.lineweight = v; });
+        syncParserMutation();
+        refreshAllUI();
+        return;
+      }
+    }
+    renderCanvas();
+  }
+
+  function setDefaultThickness(thkVal, applyToSelection = true) {
+    const v = parseFloat(thkVal);
+    if (!Number.isFinite(v)) return;
+    StudioState.defaultThickness = v;
+    if ($('#dxf-st-thk-val')) $('#dxf-st-thk-val').value = String(v);
+    const p = getActiveParser();
+    if (applyToSelection && p && StudioState.selectedIds.size > 0) {
+      const sel = p.entities.filter(ent => StudioState.selectedIds.has(ent._id) && !isLayerLocked(p, ent.layer));
+      if (sel.length) {
+        pushUndoSnapshot('Change Entity 3D Thickness');
+        sel.forEach(ent => { ent.thickness = v; });
+        syncParserMutation();
+        refreshAllUI();
+        return;
+      }
+    }
+    renderCanvas();
+  }
+
   function createRegularPolygon(cx, cy, radiusPtX, radiusPtY, sides = 6) {
     const n = Math.max(3, Math.min(36, parseInt(sides || StudioState.polygonSides || 6, 10) || 6));
     const r = Math.max(0.2, Math.hypot(radiusPtX - cx, radiusPtY - cy));
@@ -2277,6 +2432,7 @@
     const p = parser || ensureActiveParser();
     if (!_dxfToolsExt || !p || !ent) return { ok: false };
     if (isLayerLocked(p, ent.layer)) return { ok: false, reason: 'Layer is locked' };
+    const prevRedo = StudioState.redoStack.slice();
     pushUndoSnapshot('Break Entity');
     const res = _dxfToolsExt.breakEntityAtPoint(ent, wx, wy, p);
     if (res && res.ok) {
@@ -2285,6 +2441,10 @@
       syncParserMutation();
       refreshAllUI();
       logCommand(`BREAK split ${ent.type} into 2 entities.`);
+    } else {
+      StudioState.undoStack.pop();
+      StudioState.redoStack = prevRedo;
+      updateUndoRedoButtons();
     }
     return res;
   }
@@ -2298,6 +2458,7 @@
       logCommand('LENGTHEN: Select one or more LINE or ARC entities first.');
       return 0;
     }
+    const prevRedo = StudioState.redoStack.slice();
     pushUndoSnapshot(`Lengthen (${d >= 0 ? '+' : ''}${d})`);
     let count = 0;
     for (const e of sel) {
@@ -2310,6 +2471,10 @@
       syncParserMutation();
       refreshAllUI();
       logCommand(`LENGTHEN adjusted ${count} entity(s) by ${d >= 0 ? '+' : ''}${d} ${parser.unitName || 'mm'}.`);
+    } else {
+      StudioState.undoStack.pop();
+      StudioState.redoStack = prevRedo;
+      updateUndoRedoButtons();
     }
     return count;
   }
@@ -2470,7 +2635,7 @@
     const lyr = parser && parser.layers && parser.layers[effLayer];
     const locked = isLayerLocked(parser, effLayer);
     const lwRaw = (ent.lineweight != null && ent.lineweight > 0) ? ent.lineweight : ((lyr && lyr.lineweight > 0) ? lyr.lineweight : 18);
-    const basePx = StudioState.showLineweights ? Math.max(1.0, Math.min(3.6, lwRaw / 18)) : 1.15;
+    const basePx = StudioState.showLineweights ? Math.max(1.0, Math.min(10.0, lwRaw / 15)) : 1.15;
     const effPanX = panXOverride != null ? panXOverride : StudioState.panX;
 
     const is3D = is3DViewActive();
@@ -3462,9 +3627,53 @@
         ctx.lineTo(pCur.x, pCur.y);
         if (t === 'hatch') ctx.closePath();
         ctx.stroke();
-      } else if (t === 'rect') {
-        ctx.strokeRect(Math.min(p0.x, pCur.x), Math.min(p0.y, pCur.y), Math.abs(pCur.x - p0.x), Math.abs(pCur.y - p0.y));
-        ctx.fillRect(Math.min(p0.x, pCur.x), Math.min(p0.y, pCur.y), Math.abs(pCur.x - p0.x), Math.abs(pCur.y - p0.y));
+      } else if (t === 'rect' || t === 'revcloud' || t === 'box3d') {
+        const rx = Math.min(p0.x, pCur.x), ry = Math.min(p0.y, pCur.y);
+        const rw = Math.abs(pCur.x - p0.x), rh = Math.abs(pCur.y - p0.y);
+        ctx.strokeRect(rx, ry, rw, rh);
+        ctx.fillRect(rx, ry, rw, rh);
+        const wWorld = Math.abs(cur.x - pts[0].x).toFixed(2);
+        const hWorld = Math.abs(cur.y - pts[0].y).toFixed(2);
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(pCur.x + 8, pCur.y - 22, 118, 18);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '700 11px Consolas, monospace';
+        ctx.fillText(`W:${wWorld} × H:${hWorld}`, pCur.x + 12, pCur.y - 9);
+      } else if (t === 'triangle') {
+        const triW = cur.x - pts[0].x;
+        const triH = cur.y - pts[0].y;
+        const tPts = buildTrianglePoints(pts[0].x, pts[0].y, Math.abs(triW) > 1e-3 ? triW : 1, Math.abs(triH) > 1e-3 ? triH : 1, StudioState.triangleType);
+        const s0 = worldToScreen(tPts[0][0], tPts[0][1], H);
+        const s1 = worldToScreen(tPts[1][0], tPts[1][1], H);
+        const s2 = worldToScreen(tPts[2][0], tPts[2][1], H);
+        ctx.beginPath();
+        ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        const wWorld = Math.abs(triW).toFixed(2);
+        const hWorld = (StudioState.triangleType === 'equilateral' ? Math.abs(triW) * Math.sqrt(3) / 2 : Math.abs(triH)).toFixed(2);
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(pCur.x + 8, pCur.y - 22, 132, 18);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '700 11px Consolas, monospace';
+        ctx.fillText(`△ W:${wWorld} × H:${hWorld}`, pCur.x + 12, pCur.y - 9);
+      } else if (t === 'polygon') {
+        const nSides = Math.max(3, Math.min(36, parseInt(StudioState.polygonSides || 6, 10) || 6));
+        const rPx = Math.max(2, Math.hypot(pCur.x - p0.x, pCur.y - p0.y));
+        const a0 = Math.atan2(pCur.y - p0.y, pCur.x - p0.x);
+        ctx.beginPath();
+        for (let i = 0; i < nSides; i++) {
+          const ang = a0 + (i * 2 * Math.PI) / nSides;
+          const vx = p0.x + rPx * Math.cos(ang), vy = p0.y + rPx * Math.sin(ang);
+          if (i === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (t === 'xline' || t === 'leader' || t === 'measure') {
+        ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(pCur.x, pCur.y); ctx.stroke();
       } else if (t === 'circle' || t === 'arc' || t === 'ellipse') {
         const rPx = Math.hypot(pCur.x - p0.x, pCur.y - p0.y);
         ctx.beginPath(); ctx.arc(p0.x, p0.y, Math.max(1, rPx), 0, Math.PI * 2); ctx.stroke();
@@ -3597,7 +3806,10 @@
       pan: 'Pan mode: Drag canvas to pan modelspace.',
       line: 'LINE: Click start point, then next point(s). Press Enter or Esc to finish.',
       polyline: 'PLINE: Click vertices to draw LWPOLYLINE. Press Enter or double-click to finish.',
-      rect: 'RECTANG: Click first corner point, then opposite corner point.',
+      rect: 'RECTANG: Click first corner point, then opposite corner point (uses active Thickness/Lineweight).',
+      triangle: StudioState.triangleFixedSize
+        ? `TRIANGLE (1-Click Fixed W=${StudioState.triangleWidth} × H=${StudioState.triangleHeight}, ${StudioState.triangleType}): Click anywhere to place triangle.`
+        : `TRIANGLE (${StudioState.triangleType}): Click base corner, then drag/click opposite corner to set Width & Height — or enable 1-Click W×H in the ribbon.`,
       circle: 'CIRCLE: Click center point, then radius point.',
       arc: 'ARC: Click center point, then radius/start point, then end angle point.',
       ellipse: 'ELLIPSE: Click center point, then major axis endpoint.',
@@ -3656,7 +3868,9 @@
       trueColor: tcVal,
       customHex: isCustom ? StudioState.activeCustomHex : null,
       linetype: StudioState.activeLinetype !== 'BYLAYER' ? StudioState.activeLinetype : 'BYLAYER',
-      lineweight: StudioState.activeLineweight
+      lineweight: StudioState.activeLineweight,
+      elevation: StudioState.defaultElevation || 0,
+      thickness: StudioState.defaultThickness || 0
     };
   }
 
@@ -3665,7 +3879,7 @@
     if (!parser) return;
     const t = StudioState.activeTool;
 
-    if (isLayerLocked(parser, StudioState.currentLayer) && ['line', 'polyline', 'rect', 'polygon', 'donut', 'revcloud', 'box3d', 'xline', 'circle', 'arc', 'ellipse', 'spline', 'text', 'dim', 'dimang', 'dimrad', 'dimdia', 'leader', 'hatch', 'point', 'insert'].includes(t)) {
+    if (isLayerLocked(parser, StudioState.currentLayer) && ['line', 'polyline', 'rect', 'triangle', 'polygon', 'donut', 'revcloud', 'box3d', 'xline', 'circle', 'arc', 'ellipse', 'spline', 'text', 'dim', 'dimang', 'dimrad', 'dimdia', 'leader', 'hatch', 'point', 'insert'].includes(t)) {
       toast(`Current layer "${StudioState.currentLayer}" is LOCKED. Unlock it first to draw new entities.`);
       logCommand(`Blocked: Layer "${StudioState.currentLayer}" is locked.`);
       return;
@@ -3890,9 +4104,11 @@
         pushUndoSnapshot('Match Properties');
         hit.layer = StudioState.matchSourceEnt.layer;
         hit.color = StudioState.matchSourceEnt.color;
+        hit.trueColor = StudioState.matchSourceEnt.trueColor;
         hit.customHex = StudioState.matchSourceEnt.customHex;
         hit.linetype = StudioState.matchSourceEnt.linetype;
         hit.lineweight = StudioState.matchSourceEnt.lineweight;
+        hit.thickness = StudioState.matchSourceEnt.thickness || 0;
         syncParserMutation();
         refreshAllUI();
         logCommand(`Applied properties (Layer=${hit.layer}) to ${hit.type}.`);
@@ -4086,6 +4302,44 @@
       logCommand(msg);
       toast(msg);
       renderCanvas();
+      return;
+    }
+
+    if (t === 'triangle' && StudioState.triangleFixedSize && pts.length >= 1) {
+      const p0 = pts[0];
+      const w = Math.max(0.1, Number(StudioState.triangleWidth) || 60);
+      const h = Math.max(0.1, Number(StudioState.triangleHeight) || 50);
+      pushUndoSnapshot('Draw Triangle');
+      const ent = createTriangleEntity(p0.x - w * 0.5, p0.y, w, h, StudioState.triangleType);
+      parser.entities.push(ent);
+      syncParserMutation();
+      StudioState.selectedIds = new Set([ent._id]);
+      StudioState.tempPoints = [];
+      refreshAllUI();
+      const effH = StudioState.triangleType === 'equilateral' ? (w * Math.sqrt(3) / 2) : h;
+      logCommand(`Created ${StudioState.triangleType.toUpperCase()} TRIANGLE (W=${w.toFixed(2)} × H=${effH.toFixed(2)}) at (${p0.x.toFixed(2)}, ${p0.y.toFixed(2)}).`);
+      return;
+    }
+
+    if (t === 'triangle' && pts.length >= 2) {
+      const [p1, p2] = pts;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const w = Math.abs(dx) > 1e-3 ? dx : (StudioState.triangleWidth || 60);
+      const h = Math.abs(dy) > 1e-3 ? dy : (StudioState.triangleHeight || 50);
+      pushUndoSnapshot('Draw Triangle');
+      const ent = createTriangleEntity(p1.x, p1.y, w, h, StudioState.triangleType);
+      parser.entities.push(ent);
+      syncParserMutation();
+      StudioState.triangleWidth = +Math.abs(w).toFixed(2);
+      StudioState.triangleHeight = +(StudioState.triangleType === 'equilateral' ? Math.abs(w) * Math.sqrt(3) / 2 : Math.abs(h)).toFixed(2);
+      if ($('#dxf-st-tri-w')) $('#dxf-st-tri-w').value = StudioState.triangleWidth;
+      if ($('#dxf-st-tri-h')) $('#dxf-st-tri-h').value = StudioState.triangleHeight;
+      StudioState.selectedIds = new Set([ent._id]);
+      StudioState.tempPoints = [];
+      setActiveTool('select');
+      refreshAllUI();
+      logCommand(`Created ${StudioState.triangleType.toUpperCase()} TRIANGLE (W=${StudioState.triangleWidth} × H=${StudioState.triangleHeight}).`);
       return;
     }
 
@@ -4894,6 +5148,20 @@
 
     const ent = selEnts[0];
     const isMulti = selEnts.length > 1;
+    if (!isMulti && ent) {
+      const lwVal = ent.lineweight != null ? ent.lineweight : -1;
+      if ($('#dxf-st-lw-sel')) $('#dxf-st-lw-sel').value = String(lwVal);
+      if ($('#dxf-st-lw-sel-lyr')) $('#dxf-st-lw-sel-lyr').value = String(lwVal);
+      if ($('#dxf-st-thk-val')) $('#dxf-st-thk-val').value = String(Number(ent.thickness || 0));
+      if (detectShapeKind(ent) === 'triangle' && Array.isArray(ent.points)) {
+        const txs = ent.points.map(p => p[0]), tys = ent.points.map(p => p[1]);
+        const tw = +(Math.max(...txs) - Math.min(...txs)).toFixed(2);
+        const th = +(Math.max(...tys) - Math.min(...tys)).toFixed(2);
+        if ($('#dxf-st-tri-w')) $('#dxf-st-tri-w').value = tw;
+        if ($('#dxf-st-tri-h')) $('#dxf-st-tri-h').value = th;
+        if (ent.triType && $('#dxf-st-tri-type')) $('#dxf-st-tri-type').value = ent.triType;
+      }
+    }
     const locked = isLayerLocked(parser, ent.layer);
     const curHex = getEntityStrokeColor(ent, parser, true);
 
@@ -4925,7 +5193,35 @@
           <div class="dxf-prop-row"><label>End Angle (°)</label><input type="number" step="1" class="dxf-geom-in" data-prop="endAngle" value="${(ent.endAngle || 0).toFixed(1)}" ${locked ? 'disabled' : ''} /></div>
         `;
       } else if (ent.type === 'LWPOLYLINE' && Array.isArray(ent.points)) {
+        const shapeKind = detectShapeKind(ent);
+        let shapeSizeHTML = '';
+        if (shapeKind === 'triangle' || shapeKind === 'rect') {
+          const xs = ent.points.map(p => p[0]), ys = ent.points.map(p => p[1]);
+          const bW = Math.max(0.01, Math.max(...xs) - Math.min(...xs));
+          const bH = Math.max(0.01, Math.max(...ys) - Math.min(...ys));
+          if (shapeKind === 'triangle') {
+            const curTriType = ent.triType || 'isosceles';
+            shapeSizeHTML = `
+              <div class="dxf-prop-row"><label><b>Triangle Width (W)</b></label><input type="number" step="1" min="0.1" id="dxf-prop-tri-w" value="${bW.toFixed(2)}" ${locked ? 'disabled' : ''} /></div>
+              <div class="dxf-prop-row"><label><b>Triangle Height (H)</b></label><input type="number" step="1" min="0.1" id="dxf-prop-tri-h" value="${bH.toFixed(2)}" ${locked || curTriType === 'equilateral' ? 'disabled' : ''} /></div>
+              <div class="dxf-prop-row"><label>Triangle Type</label>
+                <select id="dxf-prop-tri-type" ${locked ? 'disabled' : ''}>
+                  <option value="isosceles" ${curTriType === 'isosceles' ? 'selected' : ''}>Isosceles</option>
+                  <option value="right-left" ${curTriType === 'right-left' ? 'selected' : ''}>Right (Left 90°)</option>
+                  <option value="right-right" ${curTriType === 'right-right' ? 'selected' : ''}>Right (Right 90°)</option>
+                  <option value="equilateral" ${curTriType === 'equilateral' ? 'selected' : ''}>Equilateral</option>
+                </select>
+              </div>
+            `;
+          } else {
+            shapeSizeHTML = `
+              <div class="dxf-prop-row"><label><b>Rect Width (W)</b></label><input type="number" step="1" min="0.1" id="dxf-prop-rect-w" value="${bW.toFixed(2)}" ${locked ? 'disabled' : ''} /></div>
+              <div class="dxf-prop-row"><label><b>Rect Height (H)</b></label><input type="number" step="1" min="0.1" id="dxf-prop-rect-h" value="${bH.toFixed(2)}" ${locked ? 'disabled' : ''} /></div>
+            `;
+          }
+        }
         geomFieldsHTML = `
+          ${shapeSizeHTML}
           <div class="dxf-prop-row"><label>Closed Loop</label><input type="checkbox" id="dxf-poly-closed" ${ent.closed ? 'checked' : ''} ${locked ? 'disabled' : ''} /></div>
           <div class="dxf-prop-row"><label>Vertices</label><b>${ent.points.length} pts</b></div>
           <div style="max-height:150px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:4px;margin-top:4px">
@@ -5014,7 +5310,7 @@
           </select>
         </div>
         <div class="dxf-prop-row">
-          <label>Lineweight</label>
+          <label>Thickness (LW)</label>
           <select id="dxf-prop-lw" ${locked ? 'disabled' : ''}>
             <option value="-1" ${(ent.lineweight == null || ent.lineweight < 0) ? 'selected' : ''}>ByLayer</option>
             ${LINEWEIGHTS.filter(w => w.v > 0).map(lw => `<option value="${lw.v}" ${ent.lineweight === lw.v ? 'selected' : ''}>${lw.l}</option>`).join('')}
@@ -5178,6 +5474,37 @@
       };
     });
 
+    const triWIn = $('#dxf-prop-tri-w');
+    const triHIn = $('#dxf-prop-tri-h');
+    const triTypeSel = $('#dxf-prop-tri-type');
+    if (triWIn || triHIn || triTypeSel) {
+      const applyTriEdit = () => {
+        const nw = parseFloat(triWIn ? triWIn.value : '');
+        const nh = parseFloat(triHIn ? triHIn.value : '');
+        const nt = triTypeSel ? triTypeSel.value : (ent.triType || 'isosceles');
+        pushUndoSnapshot('Resize Triangle');
+        resizeTriangleEntity(ent, nw, nh, nt);
+        syncParserMutation();
+        refreshAllUI();
+      };
+      if (triWIn) triWIn.onchange = applyTriEdit;
+      if (triHIn) triHIn.onchange = applyTriEdit;
+      if (triTypeSel) triTypeSel.onchange = applyTriEdit;
+    }
+    const rectWIn = $('#dxf-prop-rect-w');
+    const rectHIn = $('#dxf-prop-rect-h');
+    if (rectWIn || rectHIn) {
+      const applyRectEdit = () => {
+        const nw = parseFloat(rectWIn ? rectWIn.value : '');
+        const nh = parseFloat(rectHIn ? rectHIn.value : '');
+        pushUndoSnapshot('Resize Rectangle');
+        resizeRectEntity(ent, nw, nh);
+        syncParserMutation();
+        refreshAllUI();
+      };
+      if (rectWIn) rectWIn.onchange = applyRectEdit;
+      if (rectHIn) rectHIn.onchange = applyRectEdit;
+    }
     const polyClosed = $('#dxf-poly-closed');
     if (polyClosed) {
       polyClosed.onchange = () => {
@@ -5460,13 +5787,15 @@
       return clone;
     });
     if (!parser.blocks) parser.blocks = {};
-    parser.blocks[safeName] = { name: safeName, baseX: bx, baseY: by, entities: blkEnts };
+    const newBlkObj = { name: safeName, baseX: bx, baseY: by, entities: blkEnts };
+    parser.blocks[safeName] = newBlkObj;
+    parser.blocks[safeName.toUpperCase()] = newBlkObj;
     const selSet = new Set(selEnts.map(e => e._id));
     parser.entities = parser.entities.filter(e => !selSet.has(e._id));
     const ins = {
       _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`),
       type: 'INSERT',
-      layer: StudioState.activeLayer || '0',
+      layer: StudioState.currentLayer || '0',
       blockName: safeName,
       x: bx, y: by, z: 0,
       scaleX: 1, scaleY: 1, scaleZ: 1,
@@ -5515,13 +5844,15 @@
         }
       } else if (e.type === 'LWPOLYLINE' || e.type === 'POLYLINE') {
         const rp = e.renderPoints || e.points || [];
+        const ptXY = p => Array.isArray(p) ? [Number(p[0]) || 0, Number(p[1]) || 0] : [Number(p && p.x) || 0, Number(p && p.y) || 0];
         if (rp.length >= 2) {
           const segLens = [];
           let total = 0;
           const cnt = e.closed ? rp.length : rp.length - 1;
           for (let i = 0; i < cnt; i++) {
-            const p0 = rp[i], p1 = rp[(i + 1) % rp.length];
-            const d = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+            const [x0, y0] = ptXY(rp[i]);
+            const [x1, y1] = ptXY(rp[(i + 1) % rp.length]);
+            const d = Math.hypot(x1 - x0, y1 - y0);
             segLens.push(d);
             total += d;
           }
@@ -5530,9 +5861,10 @@
               let target = (total * k) / n;
               for (let i = 0; i < cnt; i++) {
                 if (target <= segLens[i] || i === cnt - 1) {
-                  const p0 = rp[i], p1 = rp[(i + 1) % rp.length];
+                  const [x0, y0] = ptXY(rp[i]);
+                  const [x1, y1] = ptXY(rp[(i + 1) % rp.length]);
                   const t = segLens[i] > 1e-9 ? Math.max(0, Math.min(1, target / segLens[i])) : 0;
-                  ptsToAdd.push({ x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t });
+                  ptsToAdd.push({ x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t });
                   break;
                 }
                 target -= segLens[i];
@@ -5545,7 +5877,7 @@
         parser.entities.push({
           _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`),
           type: 'POINT',
-          layer: StudioState.activeLayer || e.layer || '0',
+          layer: StudioState.currentLayer || e.layer || '0',
           x: p.x, y: p.y, z: 0,
           color: null, trueColor: null
         });
@@ -5599,7 +5931,7 @@
         if (StudioState.selectedIds.has(e._id)) targetLayers.add(e.layer || '0');
       }
     } else {
-      targetLayers.add(StudioState.activeLayer || '0');
+      targetLayers.add(StudioState.currentLayer || '0');
     }
     if (!StudioState._preIsoHidden) {
       StudioState._preIsoHidden = new Set(ds.hiddenLayers);
@@ -5760,7 +6092,7 @@
     const rPitch = Math.max(1, (Number(pcd) || 60) / 2);
     const rHole = Math.max(0.25, (Number(holeDia) || 6.6) / 2);
     if (!parserOverride) pushUndoSnapshot(`Bolt Circle ${n}x Ø${(rHole * 2).toFixed(1)} on PCD ${(rPitch * 2).toFixed(1)}`);
-    const lyr = StudioState.activeLayer || '0';
+    const lyr = StudioState.currentLayer || '0';
     // Pitch reference circle (CENTER linetype)
     parser.entities.push({
       _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`), type: 'CIRCLE', layer: lyr, cx, cy, r: rPitch,
@@ -5802,7 +6134,7 @@
     addL(x1 - tbW, y0 + tbH * 0.5, x1, y0 + tbH * 0.5);
     const txtH = Math.max(2.2, tbH * 0.22);
     parser.entities.push({ _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`), type: 'TEXT', layer: 'TITLE_BLOCK', x: x1 - tbW + txtH, y: y0 + tbH * 0.62, height: txtH, text: String(titleText), color: 7, trueColor: null });
-    parser.entities.push({ _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`), type: 'TEXT', layer: 'TITLE_BLOCK', x: x1 - tbW + txtH, y: y0 + tbH * 0.16, height: txtH * 0.78, text: `UNITS: ${(parser.unitName || 'mm').toUpperCase()}  |  KENSHO PRO v1.2.3`, color: 7, trueColor: null });
+    parser.entities.push({ _id: (`dxf_cad_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`), type: 'TEXT', layer: 'TITLE_BLOCK', x: x1 - tbW + txtH, y: y0 + tbH * 0.16, height: txtH * 0.78, text: `UNITS: ${(parser.unitName || 'mm').toUpperCase()}  |  KENSHO PRO v1.2.3.2`, color: 7, trueColor: null });
     if (!parserOverride) {
       syncParserMutation();
       refreshAllUI();
@@ -5958,6 +6290,7 @@
       L: 'line', LINE: 'line',
       PL: 'polyline', PLINE: 'polyline', POLYLINE: 'polyline', PE: 'polyline', PEDIT: 'polyline',
       REC: 'rect', RECT: 'rect', RECTANG: 'rect', RECTANGLE: 'rect',
+      TRI: 'triangle', TRIANGLE: 'triangle',
       POL: 'polygon', POLYGON: 'polygon',
       DO: 'donut', DONUT: 'donut', DOUGHNUT: 'donut',
       RC: 'revcloud', REVCLOUD: 'revcloud',
@@ -6004,6 +6337,26 @@
       setActiveTool(aliases[cmdHead]);
       return;
     }
+    if (cmdHead === 'LW' || cmdHead === 'LINEWEIGHT') {
+      const mmVal = parseFloat(cmdArg);
+      if (Number.isFinite(mmVal) && mmVal > 0) {
+        const code = mmVal <= 5 ? Math.round(mmVal * 100) : Math.round(mmVal);
+        setActiveLineweight(code, true);
+        logCommand(`LINEWEIGHT set to ${(code / 100).toFixed(2)} mm.`);
+      } else {
+        setActiveLineweight(-1, true);
+        logCommand('LINEWEIGHT reset to ByLayer.');
+      }
+      return;
+    }
+    if (cmdHead === 'THICKNESS' || cmdHead === 'THK') {
+      const tv = parseFloat(cmdArg);
+      if (Number.isFinite(tv)) {
+        setDefaultThickness(tv, true);
+        logCommand(`3D THICKNESS set to ${tv}.`);
+      }
+      return;
+    }
     if (cmdHead === 'B' || cmdHead === 'BLOCK') {
       createBlockFromSelection(cmdArg);
       return;
@@ -6025,6 +6378,7 @@
       const uKey = cmdArg.toUpperCase();
       if (parser && unitMap[uKey]) {
         const [code, uName] = unitMap[uKey];
+        parser.insunitsCode = code;
         parser.unitCode = code;
         parser.unitName = uName;
         if (parser.header) parser.header['$INSUNITS'] = String(code);
@@ -6255,6 +6609,83 @@
     return { name, text };
   }
 
+  function renderDXFDocTabs() {
+    const bar = $('#dxf-doc-tabs');
+    if (!bar) return;
+    if (!StudioState.openDocs || StudioState.openDocs.length <= 1) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      return;
+    }
+    bar.hidden = false;
+    bar.innerHTML = StudioState.openDocs.map(doc => {
+      const isAct = doc.id === StudioState.activeDocId;
+      return `<div class="dxf-doc-tab${isAct ? ' active' : ''}" data-dxf-docid="${esc(doc.id)}" title="${esc(doc.name)}">` +
+        `<span class="dxf-doc-tab-name">${esc(doc.name)}</span>` +
+        `<button type="button" class="dxf-doc-tab-x" data-dxf-closeid="${esc(doc.id)}" title="Close Drawing">&times;</button>` +
+      `</div>`;
+    }).join('');
+    bar.querySelectorAll('.dxf-doc-tab').forEach(el => {
+      el.onclick = ev => {
+        if (ev.target && ev.target.closest('.dxf-doc-tab-x')) return;
+        switchDXFDocTab(el.getAttribute('data-dxf-docid'));
+      };
+    });
+    bar.querySelectorAll('.dxf-doc-tab-x').forEach(btn => {
+      btn.onclick = ev => {
+        ev.stopPropagation();
+        closeDXFDocTab(btn.getAttribute('data-dxf-closeid'));
+      };
+    });
+  }
+
+  function registerDXFDocTab(name, raw, parsed) {
+    const existing = StudioState.openDocs.find(d => d.name === name && d.parsed === parsed);
+    if (existing) {
+      StudioState.activeDocId = existing.id;
+      renderDXFDocTabs();
+      return existing;
+    }
+    const id = 'dxfdoc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    const rec = { id, name: String(name || 'Drawing.dxf'), raw, parsed };
+    StudioState.openDocs.push(rec);
+    StudioState.activeDocId = id;
+    renderDXFDocTabs();
+    return rec;
+  }
+
+  function switchDXFDocTab(docId) {
+    const rec = StudioState.openDocs.find(d => d.id === docId);
+    const ds = getDXFState();
+    if (!rec || !ds) return;
+    StudioState.activeDocId = rec.id;
+    StudioState.viewMode = 'single';
+    StudioState.activeSlot = 'B';
+    ds.rawB = rec.raw;
+    ds.nameB = rec.name;
+    ds.parsedB = rec.parsed;
+    ds._isActiveDXFSession = true;
+    ds._isSampleDXF = false;
+    StudioState.selectedIds.clear();
+    if (typeof ds.syncLayerSetsFromParsers === 'function') ds.syncLayerSetsFromParsers();
+    renderDXFDocTabs();
+    refreshAllUI();
+    zoomExtents();
+  }
+
+  function closeDXFDocTab(docId) {
+    const idx = StudioState.openDocs.findIndex(d => d.id === docId);
+    if (idx < 0) return;
+    StudioState.openDocs.splice(idx, 1);
+    if (StudioState.activeDocId === docId) {
+      const next = StudioState.openDocs[Math.min(idx, StudioState.openDocs.length - 1)] || null;
+      if (next) switchDXFDocTab(next.id);
+      else { StudioState.activeDocId = null; renderDXFDocTabs(); }
+    } else {
+      renderDXFDocTabs();
+    }
+  }
+
   async function handleDroppedFiles(files, targetSlot = null) {
     if (!files || !files.length || typeof DXFEngine === 'undefined') return;
     const ds = getDXFState();
@@ -6282,6 +6713,16 @@
         ensureStandardBlocksOnParser(parsedB);
         ds.rawA = entryA.isBinary ? entryA.bytes : entryA.text; ds.nameA = entryA.name; ds.parsedA = parsedA;
         ds.rawB = entryB.isBinary ? entryB.bytes : entryB.text; ds.nameB = entryB.name; ds.parsedB = parsedB;
+        registerDXFDocTab(entryA.name, ds.rawA, parsedA);
+        registerDXFDocTab(entryB.name, ds.rawB, parsedB);
+        for (let fi = 2; fi < files.length; fi++) {
+          const extra = await readDXFFileEntry(files[fi]);
+          if (extra) {
+            const pExtra = new DXFEngine.DXFParser(extra.isBinary ? extra.bytes : extra.text).parse();
+            ensureStandardBlocksOnParser(pExtra);
+            registerDXFDocTab(extra.name, extra.isBinary ? extra.bytes : extra.text, pExtra);
+          }
+        }
         ds._isActiveDXFSession = true;
       ds._isSampleDXF = false;
         ds.hiddenLayers.clear();
@@ -6334,6 +6775,7 @@
           ds.parsedA = baseCopy;
         }
       }
+      registerDXFDocTab(entry.name, rawPayload, parsed);
       ds._isActiveDXFSession = true;
       ds._isSampleDXF = false;
       ds.hiddenLayers.clear();
@@ -6420,6 +6862,7 @@
             <button type="button" class="tb" data-dxf-tool="line" title="Draw Line Segment (L)"><i data-ic="line"></i><span>Line</span></button>
             <button type="button" class="tb" data-dxf-tool="polyline" title="Draw Multi-Vertex Polyline (PL)"><i data-ic="polyline"></i><span>Pline</span></button>
             <button type="button" class="tb" data-dxf-tool="rect" title="Draw Closed Rectangle (REC)"><i data-ic="box"></i><span>Rect</span></button>
+            <button type="button" class="tb" data-dxf-tool="triangle" title="Draw Triangle with Easy Width &amp; Height Settings (TRI)"><i data-ic="triangle"></i><span>Triangle</span></button>
             <button type="button" class="tb" data-dxf-tool="polygon" title="Draw Regular N-Sided Polygon (POL)"><i data-ic="polygon"></i><span>Poly</span></button>
             <button type="button" class="tb" data-dxf-tool="circle" title="Draw Center-Radius Circle (C)"><i data-ic="circle"></i><span>Circle</span></button>
             <button type="button" class="tb" data-dxf-tool="arc" title="Draw 3-Point Arc (A)"><i data-ic="arc"></i><span>Arc</span></button>
@@ -6430,6 +6873,27 @@
             <button type="button" class="tb" data-dxf-tool="xline" title="Draw Construction XLine (XL)"><i data-ic="xline"></i><span>XLine</span></button>
             <button type="button" class="tb" data-dxf-tool="box3d" title="Draw 3D Extruded Box Solid (BOX)"><i data-ic="cube3d"></i><span>3D Box</span></button>
           </div><div class="cap">AutoCAD 2D / 3D Draw</div></div>
+
+          <div class="grp" data-dxfgrp="home"><div class="row" style="gap:5px;flex-wrap:nowrap;align-items:center">
+            <label class="f" style="font-size:11px;gap:3px" title="Stroke Thickness / Lineweight for Line, Rect, Triangle &amp; All Shapes">Thick
+              <select id="dxf-st-lw-sel" style="height:22px;font-size:11px;font-weight:600">
+                <option value="-1" selected>ByLayer</option>
+                ${LINEWEIGHTS.filter(w => w.v > 0).map(lw => `<option value="${lw.v}">${lw.l}</option>`).join('')}
+              </select>
+            </label>
+            <label class="f" style="font-size:11px;gap:2px" title="3D Extrusion Z-Thickness for New &amp; Selected Shapes">Z-Thk <input type="number" id="dxf-st-thk-val" value="0" step="1" style="width:40px;height:22px"></label>
+            <span style="width:1px;height:18px;background:var(--line);margin:0 2px"></span>
+            <label class="f" style="font-size:11px;gap:2px" title="Triangle Width">Tri W <input type="number" id="dxf-st-tri-w" value="60" min="0.1" step="5" style="width:46px;height:22px"></label>
+            <label class="f" style="font-size:11px;gap:2px" title="Triangle Height">Tri H <input type="number" id="dxf-st-tri-h" value="50" min="0.1" step="5" style="width:46px;height:22px"></label>
+            <select id="dxf-st-tri-type" style="height:22px;font-size:11px" title="Triangle Geometry Type">
+              <option value="isosceles" selected>Isosceles</option>
+              <option value="right-left">Right (L)</option>
+              <option value="right-right">Right (R)</option>
+              <option value="equilateral">Equilat</option>
+            </select>
+            <label class="f" style="font-size:11px;gap:2px;cursor:pointer" title="1-Click places exact Tri W × Tri H immediately"><input type="checkbox" id="dxf-st-tri-fixed">1-Click</label>
+            <button type="button" class="rp-btn-sm" id="dxf-st-tri-place" title="Insert Triangle with Current W × H at View Center" style="height:22px;padding:0 7px;font-size:11px">+ Tri</button>
+          </div><div class="cap">Shape Thickness &amp; Triangle W×H</div></div>
 
           <div class="grp" data-dxfgrp="annotate" hidden><div class="row">
             <button type="button" class="tb" data-dxf-tool="text" title="Insert CAD Text / MText (T)"><i data-ic="text"></i><span>Text</span></button>
@@ -6465,7 +6929,6 @@
             <button type="button" class="tb" data-dxf-tool="arraypolar" title="Create Polar Circular Array Around Center Point (AP)"><i data-ic="arrayPolar"></i><span>Polar Array</span></button>
             <button type="button" class="tb" id="dxf-st-overkill" title="Remove Duplicate Overlapping Entities (OVERKILL)"><i data-ic="overkill"></i><span>Overkill</span></button>
             <button type="button" class="tb" id="dxf-st-explode" title="Explode Polyline or Block into Primitives (X)"><i data-ic="explode"></i><span>Explode</span></button>
-            <button type="button" class="tb" data-dxf-tool="break" title="Break / Split Line, Arc, or Circle at Clicked Point (BR)"><i data-ic="trim"></i><span>Break</span></button>
             <button type="button" class="tb" id="dxf-st-lengthen" title="Lengthen Selected Lines or Arcs by Delta (LEN)"><i data-ic="extend"></i><span>Lengthen</span></button>
             <button type="button" class="tb" id="dxf-st-origin" title="Move Selection or Drawing Extents to CAD Origin (0,0) (ORIGIN)"><i data-ic="fit"></i><span>To (0,0)</span></button>
             <button type="button" class="tb" id="dxf-st-area" title="Calculate Total Path Length, Enclosed Area &amp; Span (AREA)"><i data-ic="measure"></i><span>Area</span></button>
@@ -6536,6 +6999,9 @@
             <label class="f" style="font-size:11px;gap:3px" title="Active Linetype">LType
               <select id="dxf-st-lt-sel" style="height:22px;font-size:11px"><option value="BYLAYER" selected>ByLayer</option>${LINETYPES.map(lt => `<option value="${lt}">${lt}</option>`).join('')}</select>
             </label>
+            <label class="f" style="font-size:11px;gap:3px" title="Active Thickness / Lineweight for All Shapes">Thick
+              <select id="dxf-st-lw-sel-lyr" style="height:22px;font-size:11px"><option value="-1" selected>ByLayer</option>${LINEWEIGHTS.filter(w => w.v > 0).map(lw => `<option value="${lw.v}">${lw.l}</option>`).join('')}</select>
+            </label>
             <label class="f" style="font-size:11px;gap:3px" title="Drawing Units ($INSUNITS)">Units
               <select id="dxf-st-units-sel" style="height:22px;font-size:11px"><option value="mm">mm</option><option value="mils">mils</option><option value="in">in</option></select>
             </label>
@@ -6585,6 +7051,8 @@
           </div><div class="cap">Compare View &amp; Colors</div></div>
         </div>
 
+        <div id="dxf-doc-tabs" class="dxf-doc-tabs" hidden></div>
+
         <!-- KENSHO PRO DXF QUICK CONVENIENCE BAR (1-Click Tools, 2D/3D View Presets & Side-Panel Window Layouts) -->
         <div class="kdock-quick-bar dxf-quick-bar" id="dxf-quick-bar" hidden style="display:none !important">
           <div class="kq-group">
@@ -6593,6 +7061,7 @@
             <button type="button" class="kq-btn" data-dxf-tool="line" title="Draw Line (L)"><i data-ic="line"></i><span>Line</span></button>
             <button type="button" class="kq-btn" data-dxf-tool="polyline" title="Draw Polyline (PL)"><i data-ic="polyline"></i><span>Pline</span></button>
             <button type="button" class="kq-btn" data-dxf-tool="rect" title="Draw Rectangle (REC)"><i data-ic="box"></i><span>Rect</span></button>
+            <button type="button" class="kq-btn" data-dxf-tool="triangle" title="Draw Triangle (TRI)"><i data-ic="triangle"></i><span>Triangle</span></button>
             <button type="button" class="kq-btn" data-dxf-tool="polygon" title="Draw Regular Polygon (POL)"><i data-ic="polygon"></i><span>Poly</span></button>
             <button type="button" class="kq-btn" data-dxf-tool="circle" title="Draw Circle (C)"><i data-ic="circle"></i><span>Circle</span></button>
             <button type="button" class="kq-btn" data-dxf-tool="arc" title="Draw 3-Point Arc (A)"><i data-ic="arc"></i><span>Arc</span></button>
@@ -6989,6 +7458,103 @@
       $('#dxf-st-col-pick').oninput = e => applyRibbonPick(e.target.value, false);
       $('#dxf-st-col-pick').onchange = e => applyRibbonPick(e.target.value, true);
     }
+    if ($('#dxf-st-lw-sel')) {
+      $('#dxf-st-lw-sel').onchange = e => setActiveLineweight(e.target.value, true);
+    }
+    if ($('#dxf-st-lw-sel-lyr')) {
+      $('#dxf-st-lw-sel-lyr').onchange = e => setActiveLineweight(e.target.value, true);
+    }
+    if ($('#dxf-st-thk-val')) {
+      $('#dxf-st-thk-val').onchange = e => setDefaultThickness(e.target.value, true);
+    }
+    if ($('#dxf-st-tri-w')) {
+      $('#dxf-st-tri-w').onchange = e => {
+        const v = parseFloat(e.target.value);
+        if (Number.isFinite(v) && v > 0) {
+          StudioState.triangleWidth = v;
+          if (StudioState.triangleType === 'equilateral') {
+            StudioState.triangleHeight = +(v * Math.sqrt(3) / 2).toFixed(2);
+            if ($('#dxf-st-tri-h')) $('#dxf-st-tri-h').value = StudioState.triangleHeight;
+          }
+          const p = getActiveParser();
+          if (p && StudioState.selectedIds.size === 1) {
+            const selEnt = p.entities.find(ent => StudioState.selectedIds.has(ent._id) && !isLayerLocked(p, ent.layer));
+            if (selEnt && detectShapeKind(selEnt) === 'triangle') {
+              pushUndoSnapshot('Resize Triangle Width');
+              resizeTriangleEntity(selEnt, StudioState.triangleWidth, StudioState.triangleHeight, selEnt.triType || StudioState.triangleType);
+              syncParserMutation();
+              refreshAllUI();
+            }
+          }
+        }
+      };
+    }
+    if ($('#dxf-st-tri-h')) {
+      $('#dxf-st-tri-h').onchange = e => {
+        const v = parseFloat(e.target.value);
+        if (Number.isFinite(v) && v > 0) {
+          StudioState.triangleHeight = v;
+          const p = getActiveParser();
+          if (p && StudioState.selectedIds.size === 1) {
+            const selEnt = p.entities.find(ent => StudioState.selectedIds.has(ent._id) && !isLayerLocked(p, ent.layer));
+            if (selEnt && detectShapeKind(selEnt) === 'triangle') {
+              pushUndoSnapshot('Resize Triangle Height');
+              resizeTriangleEntity(selEnt, StudioState.triangleWidth, StudioState.triangleHeight, selEnt.triType || StudioState.triangleType);
+              syncParserMutation();
+              refreshAllUI();
+            }
+          }
+        }
+      };
+    }
+    if ($('#dxf-st-tri-type')) {
+      $('#dxf-st-tri-type').onchange = e => {
+        StudioState.triangleType = e.target.value || 'isosceles';
+        const isEq = StudioState.triangleType === 'equilateral';
+        if ($('#dxf-st-tri-h')) $('#dxf-st-tri-h').disabled = isEq;
+        if (isEq) {
+          StudioState.triangleHeight = +(StudioState.triangleWidth * Math.sqrt(3) / 2).toFixed(2);
+          if ($('#dxf-st-tri-h')) $('#dxf-st-tri-h').value = StudioState.triangleHeight;
+        }
+        const p = getActiveParser();
+        if (p && StudioState.selectedIds.size === 1) {
+          const selEnt = p.entities.find(ent => StudioState.selectedIds.has(ent._id) && !isLayerLocked(p, ent.layer));
+          if (selEnt && detectShapeKind(selEnt) === 'triangle') {
+            pushUndoSnapshot('Change Triangle Type');
+            resizeTriangleEntity(selEnt, StudioState.triangleWidth, StudioState.triangleHeight, StudioState.triangleType);
+            syncParserMutation();
+            refreshAllUI();
+          }
+        }
+      };
+    }
+    if ($('#dxf-st-tri-fixed')) {
+      $('#dxf-st-tri-fixed').onchange = e => {
+        StudioState.triangleFixedSize = !!e.target.checked;
+        if (StudioState.activeTool === 'triangle') setActiveTool('triangle');
+      };
+    }
+    if ($('#dxf-st-tri-place')) {
+      $('#dxf-st-tri-place').onclick = () => {
+        const p = ensureActiveParser(true);
+        if (!p) return;
+        if (isLayerLocked(p, StudioState.currentLayer)) return toast(`Layer "${StudioState.currentLayer}" is LOCKED.`);
+        const cvEl = $('#dxf-canvas');
+        const cx = cvEl ? ((cvEl.width * 0.5 - StudioState.panX) / (StudioState.zoom || 1)) : 100;
+        const cy = cvEl ? ((cvEl.height * 0.5 - StudioState.panY) / (StudioState.zoom || 1)) : 70;
+        const w = Math.max(0.1, parseFloat($('#dxf-st-tri-w') && $('#dxf-st-tri-w').value) || StudioState.triangleWidth || 60);
+        const h = Math.max(0.1, parseFloat($('#dxf-st-tri-h') && $('#dxf-st-tri-h').value) || StudioState.triangleHeight || 50);
+        StudioState.triangleWidth = w;
+        StudioState.triangleHeight = h;
+        pushUndoSnapshot('Place Triangle');
+        const ent = createTriangleEntity(cx - w * 0.5, cy - h * 0.5, w, h, StudioState.triangleType);
+        p.entities.push(ent);
+        syncParserMutation();
+        StudioState.selectedIds = new Set([ent._id]);
+        refreshAllUI();
+        logCommand(`Placed ${StudioState.triangleType.toUpperCase()} TRIANGLE (W=${w.toFixed(2)} × H=${h.toFixed(2)}) at center.`);
+      };
+    }
     if ($('#dxf-st-lt-sel')) {
       $('#dxf-st-lt-sel').onchange = e => {
         StudioState.activeLinetype = e.target.value;
@@ -7060,6 +7626,7 @@
     if ($('#dxf-st-bom-csv')) $('#dxf-st-bom-csv').onclick = () => exportDXFBOMCSV(true);
     if ($('#dxf-st-boltcircle')) $('#dxf-st-boltcircle').onclick = () => generateBoltCirclePattern(0, 0, 60, 6, 6.6, 0);
     if ($('#dxf-st-titleblock')) $('#dxf-st-titleblock').onclick = () => insertMechanicalTitleBlock('KENSHO PRO CAD DRAWING');
+    if ($('#dxf-vc-orbit-btn')) $('#dxf-vc-orbit-btn').onclick = () => setActiveTool(StudioState.activeTool === 'orbit' ? 'select' : 'orbit');
 
     // Wire Layer Dock Quick Buttons
     const addNewLayerPrompt = async () => {
@@ -7944,6 +8511,9 @@
       return false;
     },
     handleDroppedFiles,
+    registerDXFDocTab,
+    switchDXFDocTab,
+    closeDXFDocTab,
     readDXFFileEntry,
     executeCommandLine,
     translateEntity,
@@ -7959,6 +8529,12 @@
     quickSelectEntities,
     findAndReplaceDXFText,
     exportDXFBOMCSV,
+    createTriangleEntity,
+    resizeTriangleEntity,
+    resizeRectEntity,
+    detectShapeKind,
+    setActiveLineweight,
+    setDefaultThickness,
     generateBoltCirclePattern,
     insertMechanicalTitleBlock,
     toolDone,

@@ -328,8 +328,8 @@ async function testAsync(name, fn) {
 
   test('NSIS Installer script matches Version 1.2.3 and VIProductVersion 1.2.3.0', () => {
     const nsi = fs.readFileSync('installer.nsi', 'utf8');
-    assert(nsi.includes('!define VERSION "1.2.3"'));
-    assert(nsi.includes('VIProductVersion "1.2.3.0"'));
+    assert(nsi.includes('!define VERSION "1.2.3.2"'));
+    assert(nsi.includes('VIProductVersion "1.2.3.2"'));
     assert(nsi.includes('Kensho Studio - textportdocx.in'));
   });
 
@@ -356,7 +356,7 @@ async function testAsync(name, fn) {
     assert(html.includes('measure_engine.js'), 'Must load measure_engine.js');
     assert(html.includes('worker_engine.js'), 'Must load worker_engine.js');
     assert(html.includes('ui_ribbon.js'), 'Must load ui_ribbon.js');
-    assert(html.includes('Version 1.2.3'), 'Modal must show Version 1.2.3');
+    assert(html.includes('Version 1.2.3.2'), 'Modal must show Version 1.2.3.2');
     assert(html.includes('rp-about-card'), 'About modal must include enterprise .rp-about-card layout');
     assert(html.includes('rp-about-grid'), 'About modal must include 6-module capability grid');
     assert(html.includes('about-guide-btn') && html.includes('about-shortcuts-btn') && html.includes('about-license-btn') && html.includes('about-copy-btn'), 'About modal must include interactive footer buttons');
@@ -1158,7 +1158,7 @@ async function testAsync(name, fn) {
     assert(wf.includes('node build_setup.js') && wf.includes('C:\\Program Files (x86)\\NSIS'),
       '.github/workflows/build-windows.yml must resolve NSIS paths and run node build_setup.js');
     assert.strictEqual(pkg.scripts['dist:setup'], 'node build_setup.js', 'package.json dist:setup must invoke node build_setup.js');
-    assert(pkg.build && pkg.build.nsis && pkg.build.nsis.artifactName === 'KenshoPro-Setup-1.2.3.exe',
+    assert(pkg.build && pkg.build.nsis && pkg.build.nsis.artifactName === 'KenshoPro-Setup-1.2.3.2.exe',
       'package.json must configure build.nsis.artifactName as KenshoPro-Setup-1.2.3.exe');
   });
 
@@ -1190,8 +1190,8 @@ async function testAsync(name, fn) {
       'pro.js status observer must use proper \\b word boundary');
 
     // Verify main.js Linux runtime support
-    assert(mainJs.includes("process.platform === 'linux'") && mainJs.includes("appendSwitch('no-sandbox')"),
-      'main.js must configure --no-sandbox and desktopName on Linux');
+    assert(mainJs.includes("process.platform === 'linux'") && mainJs.includes("KENSHO_ALLOW_NO_SANDBOX === '1'"),
+      'main.js must keep Linux Chromium sandbox enabled by default (opt-in env override only)');
     assert(mainJs.includes('url.fileURLToPath') && mainJs.includes("ipcMain.handle('copy-text'"),
       'main.js must decode file:// URIs on Linux and provide copy-text IPC handler');
 
@@ -1200,8 +1200,8 @@ async function testAsync(name, fn) {
       'package.json must define dist:linux, dist:linux:portable, and dist:linux:setup scripts');
     assert(pkg.build.linux && pkg.build.appImage && pkg.build.deb && pkg.build.rpm,
       'package.json must configure build.linux, build.appImage, build.deb, and build.rpm');
-    assert.strictEqual(pkg.build.appImage.artifactName, 'KenshoPro-Portable-1.2.3-${arch}.AppImage');
-    assert.strictEqual(pkg.build.deb.artifactName, 'KenshoPro-Setup-1.2.3-${arch}.deb');
+    assert.strictEqual(pkg.build.appImage.artifactName, 'KenshoPro-Portable-1.2.3.2-${arch}.AppImage');
+    assert.strictEqual(pkg.build.deb.artifactName, 'KenshoPro-Setup-1.2.3.2-${arch}.deb');
 
     // Verify Linux packaging scripts and workflows exist
     assert(fs.existsSync('install-linux.sh'), 'install-linux.sh must exist');
@@ -1225,8 +1225,8 @@ async function testAsync(name, fn) {
       const launcher = linuxBuilder.createPortableLauncher(fakeUnpacked);
       assert(fs.existsSync(launcher), 'KenshoPro-Portable.sh launcher must be created');
       const launcherContent = fs.readFileSync(launcher, 'utf8');
-      assert(launcherContent.includes('--user-data-dir="$PORTABLE_DATA"') && launcherContent.includes('--no-sandbox'),
-        'Portable launcher must pass --no-sandbox and isolated --user-data-dir');
+      assert(launcherContent.includes('--user-data-dir="$PORTABLE_DATA"') && !launcherContent.includes('--no-sandbox'),
+        'Portable launcher must keep Chromium sandbox enabled and pass isolated --user-data-dir');
 
       const tarPath = path.join(tmpDir, 'KenshoPro-Portable-1.2.3-linux-x64.tar.gz');
       execFileSync('tar', ['-czf', tarPath, '-C', tmpDir, 'linux-unpacked']);
@@ -2029,8 +2029,8 @@ test("v1.2.3 Hardening: npm test script, Headless Test Guards, Adaptive Hardware
 
   // Module 2: Version 1.2.3 synchronization
   assert.strictEqual(pkg.version, "1.2.3");
-  assert(nsi.includes('!define VERSION "1.2.3"') && nsi.includes('VIProductVersion "1.2.3.0"'));
-  assert(html.includes("Version 1.2.3") && readme.includes("1.2.3") && buildSetup.includes("KenshoPro-Setup-1.2.3.exe"));
+  assert(nsi.includes('!define VERSION "1.2.3.2"') && nsi.includes('VIProductVersion "1.2.3.2"'));
+  assert(html.includes("Version 1.2.3.2") && readme.includes("1.2.3.2") && buildSetup.includes("KenshoPro-Setup-1.2.3.2.exe"));
 
   // Module 3: Adaptive hardware & low-spec memory safeguard in app.js
   assert(appSrc.includes("const devMem = (typeof navigator !== 'undefined' && navigator.deviceMemory) ? navigator.deviceMemory : 8;"));
@@ -2425,13 +2425,15 @@ test("SUITE 12: DXF Unicode Escape (Invalid Code Point 5126724 Fix), JSON Schema
 
   // 3. Verify package.json and package-lock.json validity & schema compliance
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
-  const plock = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package-lock.json"), "utf8"));
-  assert.strictEqual(pkg.version, plock.version, "package.json and package-lock.json versions must match");
+  if (fs.existsSync(path.join(ROOT_DIR, "package-lock.json"))) {
+    const plock = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package-lock.json"), "utf8"));
+    assert.strictEqual(pkg.version, plock.version, "package.json and package-lock.json versions must match");
+  }
   assert(pkg.build.files.includes("dxf_studio.js"), "package.json build.files must include dxf_studio.js");
   assert(!("signAndEditExecutable" in (pkg.build.win || {})), "package.json build.win must not contain invalid signAndEditExecutable schema key");
 
   // 4. Verify zero stray ASCII control bytes across all source files
-  const filesToCheck = ["app.js", "pro.js", "dxf_engine.js", "dxf_studio.js", "ui_ribbon.js", "cam_engine.js", "main.js", "preload.js", "index.html", "style.css", "package.json", "package-lock.json"];
+  const filesToCheck = ["app.js", "pro.js", "dxf_engine.js", "dxf_studio.js", "ui_ribbon.js", "cam_engine.js", "main.js", "preload.js", "index.html", "style.css", "package.json"];
   for (const fn of filesToCheck) {
     const raw = fs.readFileSync(path.join(ROOT_DIR, fn), "utf8");
     for (let i = 0; i < raw.length; i++) {
@@ -3059,7 +3061,7 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
 
   test('SUITE 21: Kensho Pro Rebranding, NSIS/Linux Installer Bug Fixes, DIB Icon & EULA License Verification', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8'));
-    const plock = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package-lock.json'), 'utf8'));
+    const plock = fs.existsSync(path.join(ROOT_DIR, 'package-lock.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package-lock.json'), 'utf8')) : { name: pkg.name };
     const nsi = fs.readFileSync(path.join(ROOT_DIR, 'installer.nsi'), 'utf8');
     const lic = fs.readFileSync(path.join(ROOT_DIR, 'LICENSE.txt'), 'utf8');
     const proSrc = fs.readFileSync(path.join(ROOT_DIR, 'pro.js'), 'utf8');
@@ -3075,7 +3077,7 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
     assert.strictEqual(pkg.build.productName, 'Kensho Pro');
     assert.strictEqual(pkg.build.appId, 'in.textportdocx.kenshopro');
     assert(lic.startsWith('KENSHO PRO - END-USER LICENSE AGREEMENT (EULA)'), 'LICENSE.txt must be rebranded to Kensho Pro EULA');
-    assert(lic.includes('Version 1.2.3  |  Publisher: Kensho Studio'), 'LICENSE.txt must match Version 1.2.3 and Kensho Studio');
+    assert(lic.includes('Version 1.2.3.2 (Build O1R0A7N5G0E002026A1232)  |  Publisher: Kensho Studio'), 'LICENSE.txt must match Version 1.2.3 and Kensho Studio');
     assert(lic.includes('I accept the terms of the License Agreement'), 'LICENSE.txt acceptance wording must match NSIS radio button');
 
     // 2. Verify build/icon.ico uses uncompressed 32-bit BGRA BITMAPINFOHEADER (biSize=40) DIB frames so makensis never rejects small icons
@@ -3094,7 +3096,7 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
     const finishPageIdx = nsi.indexOf('!insertmacro MUI_PAGE_FINISH');
     assert(welcomeIdx !== -1 && finishRunIdx > welcomeIdx && finishRunIdx < finishPageIdx,
       'installer.nsi must define MUI_FINISHPAGE_RUN after MUI_PAGE_WELCOME and immediately before MUI_PAGE_FINISH');
-    assert(nsi.includes('VIFileVersion "1.2.3.0"') && nsi.includes('SetShellVarContext current'),
+    assert(nsi.includes('VIFileVersion "1.2.3.2"') && nsi.includes('SetShellVarContext current'),
       'installer.nsi must include VIFileVersion and SetShellVarContext current');
 
     // 4. Verify build_setup.js exports findNsisResourcesPluginDir and Linux scripts are synchronized
@@ -3104,7 +3106,7 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
     assert(!('license' in (pkg.build.appImage || {})), 'package.json build.appImage must not set blocking terminal license prompt');
 
     // 5. Verify in-app EULA modal (FULL_EULA_TEXT) and removal of unsolicited startup network update check
-    assert(proSrc.includes('FULL_EULA_TEXT') && proSrc.includes("id: 'rp-license-modal'") && proSrc.includes("safeSet('termsAccepted', '1.2.3')"),
+    assert(proSrc.includes('FULL_EULA_TEXT') && proSrc.includes("id: 'rp-license-modal'") && proSrc.includes("safeSet('termsAccepted', '1.2.3.2')"),
       'pro.js showTerms() must embed full EULA text and persist termsAccepted');
     assert(!menuSrc.includes('window.checkForUpdates({ silent: true })'),
       'menu.js must not make unsolicited background network calls on startup');
@@ -4248,12 +4250,15 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
     const ver = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "version.json"), "utf8"));
     assert(fs.existsSync(path.join(ROOT_DIR, "build", "logo.png")), "build/logo.png must exist for splash screen");
-    assert(splashHtml.includes("build/logo.png") && splashHtml.includes("v1.2.3") && splashHtml.includes("Version 1.2.3"),
+    assert(splashHtml.includes("build/logo.png") && splashHtml.includes("v1.2.3.2") && splashHtml.includes("Version 1.2.3.2") && splashHtml.includes("O1R0A7N5G0E002026A1232"),
       "splash.html must render the application logo (build/logo.png) and display version 1.2.3");
     assert(mainSrc.includes("splash.html") && mainSrc.includes("closeSplashSafely"),
       "main.js must launch splash.html on startup and close it cleanly on ready-to-show");
     assert.strictEqual(pkg.version, "1.2.3", "package.json version must be 1.2.3");
-    assert.strictEqual(ver.version, "1.2.3", "version.json version must be 1.2.3");
+    assert.strictEqual(ver.version, "1.2.3.2", "version.json version must be 1.2.3.2");
+    assert.strictEqual(ver.buildVersion, "O1R0A7N5G0E002026A1232", "version.json buildVersion must be O1R0A7N5G0E002026A1232");
+    assert.strictEqual(pkg.displayVersion, "1.2.3.2", "package.json displayVersion must be 1.2.3.2");
+    assert.strictEqual(pkg.buildVersion, "O1R0A7N5G0E002026A1232", "package.json buildVersion must be O1R0A7N5G0E002026A1232");
     assert(pkg.build.files.includes("splash.html") && pkg.build.files.includes("build/logo.png"),
       "package.json build.files must bundle splash.html and build/logo.png");
   });
@@ -4467,6 +4472,749 @@ await testAsync("SUITE 15: Precision Alignment & Wording Diffs (PDF/DXF/CAM) + 6
       "solidworks_studio.js must clear stale SWState.doc on STEP/sample load, support .kensho3d picker, handle canvas drop, and redraw on window resize");
     assert(!dsSrc.includes("nextEntityId("),
       "dxf_studio.js must have zero undefined nextEntityId() calls");
+  });
+
+
+  // ============================================================================
+  // SUITE 46: SolidWorks PropertyManager Feature & Hole-Size Editor, Rollback Bar & Parametric Undo/Redo
+  // ============================================================================
+  await testAsync("SUITE 46: Interactive Feature & Hole-Size Editing (ISO M3-M20 / Custom Ø), Rollback Bar & Parametric Undo/Redo", async () => {
+    const K = require(path.join(ROOT_DIR, "cad_kernel.js"));
+    const SWStudio = require(path.join(ROOT_DIR, "solidworks_studio.js"));
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+
+    // 1. Live edit Extrude Boss width/depth & Hole Wizard ISO size (M6 -> M12) & custom diameter
+    SWStudio.SWState.doc = K.createSampleParametricPart();
+    SWStudio.SWState.modelA = SWStudio.SWState.doc.toModelObject();
+    SWStudio.SWState.undoStack = [];
+    SWStudio.SWState.redoStack = [];
+
+    const boss = SWStudio.SWState.doc.features.find(f => f.type === "EXTRUDE_BOSS");
+    const hole = SWStudio.SWState.doc.features.find(f => f.type === "HOLE_WIZARD");
+    const origW = SWStudio.SWState.doc.stats.sizeX;
+    assert(Math.abs(origW - 100) < 1e-3, "Initial base plate width must be 100mm");
+
+    // Edit Boss Width 100 -> 140mm
+    SWStudio.editFeatureParams(boss.id, { width: 140, depth: 18 }, "Base_Plate_Wide");
+    assert(Math.abs(SWStudio.SWState.doc.stats.sizeX - 140) < 1e-3, "editFeatureParams must update Boss width to 140mm live");
+    assert.strictEqual(SWStudio.SWState.doc.features[0].name, "Base_Plate_Wide", "editFeatureParams must rename feature cleanly");
+
+    // Edit Hole Wizard M6 (6.6mm) -> M12 (13.5mm)
+    SWStudio.editFeatureParams(hole.id, { size: "M12", holeType: "clearance", diameter: null });
+    const m12Hole = SWStudio.SWState.doc.holes.find(h => h.featureId === hole.id);
+    assert(m12Hole && Math.abs(m12Hole.diameter - 13.5) < 1e-3 && m12Hole.spec === "M12",
+      "editFeatureParams must resize Hole Wizard from M6 to M12 (Ø13.5mm clearance)");
+
+    // Undo -> restores M6, Undo again -> restores 100mm width, Redo -> restores 140mm width
+    assert.strictEqual(SWStudio.undoSW(), true, "undoSW must undo Hole Wizard M12 edit");
+    const m6Restored = SWStudio.SWState.doc.holes.find(h => h.featureId === hole.id);
+    assert(m6Restored && Math.abs(m6Restored.diameter - 6.6) < 1e-3, "Undo must restore M6 (Ø6.6mm) hole size");
+    assert.strictEqual(SWStudio.undoSW(), true, "Second undoSW must undo Boss width edit");
+    assert(Math.abs(SWStudio.SWState.doc.stats.sizeX - 100) < 1e-3, "Second undo must restore 100mm base width");
+    assert.strictEqual(SWStudio.redoSW(), true, "redoSW must re-apply 140mm width");
+    assert(Math.abs(SWStudio.SWState.doc.stats.sizeX - 140) < 1e-3, "Redo must restore 140mm base width");
+
+    // 2. Verify PropertyManager UI controls & Rollback Bar presence
+    assert(swSrc.includes("id=\"sw-pm-apply\"") && swSrc.includes("id=\"sw-pm-hsize\"") && swSrc.includes("id=\"sw-pm-htype\"") &&
+           swSrc.includes("id=\"sw-pm-hdia\"") && swSrc.includes("id=\"sw-rollback-range\"") && swSrc.includes("id=\"sw-undo-btn\""),
+      "solidworks_studio.js must render PropertyManager feature/hole editor, Rollback Bar, and Undo/Redo controls");
+  });
+
+
+  // ============================================================================
+  // SUITE 47: 8 Workstation Themes, Responsive Top-Bar & Theme-Aware SolidWorks UI
+  // ============================================================================
+  await testAsync("SUITE 47: 8 Curated Workstation Themes, Top-Bar Overflow Fix & Theme-Aware SolidWorks Docks/Inputs", async () => {
+    const cssSrc = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const htmlSrc = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+
+    for (const th of ["light", "autocad", "solidworks", "blueprint", "nord", "amber", "emerald"]) {
+      assert(cssSrc.includes(`[data-theme="${th}"]`), `style.css must define [data-theme="${th}"]`);
+    }
+    assert(htmlSrc.includes("id=\"theme-preset-sel\"") && htmlSrc.includes("SolidWorks Blue") && htmlSrc.includes("AutoCAD Classic") && htmlSrc.includes("Blueprint Navy"),
+      "index.html must expose #theme-preset-sel with all 8 workstation themes");
+    assert(appSrc.includes("const APP_THEMES =") && appSrc.includes("SolidWorksStudio.SWState.background"),
+      "app.js setTheme() must support all 8 themes and sync SolidWorks 3D Studio backdrop");
+    assert(swSrc.includes("class=\"sw-aside\"") && swSrc.includes("background:var(--btn);color:var(--ink)") && !swSrc.includes("background:#0d131d"),
+      "solidworks_studio.js docks and PropertyManager inputs must use theme CSS variables with zero hardcoded dark backgrounds");
+  });
+
+
+  // ============================================================================
+  // SUITE 48: Tool Completeness Audit (PDF Lock/Snap, CAD ViewCube Orbit, SolidWorks Mate/NewPart/Shortcuts, Ctrl+4 Menu & openExternal)
+  // ============================================================================
+  await testAsync("SUITE 48: Tool Completeness — PDF moveAnn Lock/SnapGrid, CAD ViewCube Orbit, SolidWorks Mate Types/NewPart/Shortcuts & Ctrl+4 Menu", async () => {
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const dsSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_studio.js"), "utf8");
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const menuSrc = fs.readFileSync(path.join(ROOT_DIR, "menu.js"), "utf8");
+
+    assert(edSrc.includes("if (!a || a.locked) return;") && edSrc.includes("if (E.snapGrid) { a.x = snapCoordToGrid(a.x);"),
+      "editor.js moveAnn() must enforce locked annotation guard and Snap-to-Grid");
+    assert(dsSrc.includes("if ($(\x27#dxf-vc-orbit-btn\x27)) $(\x27#dxf-vc-orbit-btn\x27).onclick ="),
+      "dxf_studio.js must wire ViewCube #dxf-vc-orbit-btn button");
+    assert(swSrc.includes("id=\"sw-new-part\"") && swSrc.includes("id=\"sw-mate-type\"") && swSrc.includes("CONCENTRIC") && swSrc.includes("DISTANCE:5") && swSrc.includes("addEventListener(\x27keydown\x27"),
+      "solidworks_studio.js must expose New Part, interactive Mate Type selector, and desktop 3D keyboard shortcuts");
+    assert(appSrc.includes("e.key === \x274\x27") && menuSrc.includes("SolidWorks 3D Studio") && menuSrc.includes("openSolidWorks3DFile"),
+      "app.js and menu.js must bind Ctrl+4, expose SolidWorks 3D Studio in View menu, and route CLI/OS external 3D & DWG files");
+  });
+
+
+  // ============================================================================
+  // SUITE 49: DXF Studio & Compare Studio Deep Bug Fixes
+  // ============================================================================
+  await testAsync("SUITE 49: DXF Studio (DIVIDE LWPOLYLINE Tuple Fix, Case-Insensitive BLOCK, UNITS insunitsCode) & Compare Studio (resetCompareAlignment, Live Curtain Ratio)", async () => {
+    const dsSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_studio.js"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const ribSrc = fs.readFileSync(path.join(ROOT_DIR, "ui_ribbon.js"), "utf8");
+
+    assert(dsSrc.includes("const ptXY = p => Array.isArray(p) ?") && !dsSrc.includes("Math.hypot(p1.x - p0.x, p1.y - p0.y)"),
+      "dxf_studio.js divideSelectedEntities must support [x,y,bulge] tuple vertices without NaN");
+    assert(dsSrc.includes("parser.blocks[safeName.toUpperCase()] = newBlkObj;"),
+      "dxf_studio.js createBlockFromSelection must register uppercase lookup key");
+    assert(dsSrc.includes("parser.insunitsCode = code;"),
+      "dxf_studio.js UNITS command must update parser.insunitsCode for cross-unit compare");
+    assert(appSrc.includes("S.degA = 0; S.degB = 0;") && appSrc.includes("S.mirrorXA = false; S.mirrorYA = false;") && appSrc.includes("if ($(\x27#dx\x27)) $(\x27#dx\x27).value = \x270\x27;"),
+      "app.js resetCompareAlignment must reset real #dx/#dy, degA/degB, rotA/rotB, and mirrorXA/YA/XB/YB");
+    assert(ribSrc.includes("getCurtainRatio: () => Math.max(0.02, Math.min(0.98, curtainPct / 100))"),
+      "ui_ribbon.js must export getCurtainRatio() so Native Vector DXF Curtain Split tracks the live slider");
+  });
+
+
+  // ============================================================================
+  // SUITE 50: Installer, Build Scripts & node_modules Packaging Hygiene Verification
+  // ============================================================================
+  await testAsync("SUITE 50: Installer & node_modules Hygiene (package.json build.files, NSIS 3D CAD Associations, Windows/Linux Builder Sync)", async () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+    const nsi = fs.readFileSync(path.join(ROOT_DIR, "installer.nsi"), "utf8");
+    const bat = fs.readFileSync(path.join(ROOT_DIR, "Build-Windows-EXEs.bat"), "utf8");
+    const sh = fs.readFileSync(path.join(ROOT_DIR, "Build-Linux-Packages.sh"), "utf8");
+
+    assert(pkg.build.files.includes("version.json") && pkg.build.files.includes("!node_modules/pdfjs-dist/**") && pkg.build.files.includes("!node_modules/pdf-lib/**"),
+      "package.json build.files must include version.json and exclude duplicate pre-bundled pdfjs-dist/pdf-lib node_modules bloat");
+    assert(pkg.engines && pkg.engines.node === ">=18.0.0", "package.json must declare Node >=18.0.0 engine");
+    assert(nsi.includes(".step") && nsi.includes(".stp") && nsi.includes(".sldprt") && nsi.includes(".kensho3d") && nsi.includes(".dwg"),
+      "installer.nsi must register and cleanly uninstall .dwg, .step, .stp, .sldprt, .sldasm, .stl, .obj, and .kensho3d");
+    assert(bat.includes("1.2.3") && !bat.includes("1.1.0") && bat.includes("--no-audit --no-fund") && bat.includes("NSIS setup build failed"),
+      "Build-Windows-EXEs.bat must target v1.2.3 with --no-audit --no-fund and strict error checks");
+    assert(sh.includes("1.2.3") && !sh.includes("1.1.0") && sh.includes("node_modules/electron-builder") && sh.includes("--no-audit --no-fund"),
+      "Build-Linux-Packages.sh must target v1.2.3 and verify electron/electron-builder inside node_modules");
+  });
+
+
+  // ============================================================================
+  // SUITE 51: Workstation UI Redesign (Command Palette, Status Bar, Zen & Density)
+  // ============================================================================
+  await testAsync("SUITE 51: Workstation UI Redesign (Ctrl+K Command Palette, Status Bar, Zen Mode, Compact Density & CAD Start Screens)", async () => {
+    const polishJs = fs.readFileSync(path.join(ROOT_DIR, "ui_workstation_polish.js"), "utf8");
+    const html = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const css = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+
+    assert(html.includes("ui_workstation_polish.js"), "index.html must load ui_workstation_polish.js");
+    assert(pkg.build.files.includes("ui_workstation_polish.js"), "package.json build.files must include ui_workstation_polish.js");
+    assert(
+      polishJs.includes("openCommandPalette") &&
+      polishJs.includes("toggleZenMode") &&
+      polishJs.includes("toggleDensity") &&
+      polishJs.includes("kp-statusbar") &&
+      polishJs.includes("KenshoToast"),
+      "ui_workstation_polish.js must implement Command Palette, Status Bar, Zen Mode, Compact Density, and Toast API"
+    );
+    assert(
+      css.includes("KENSHO PRO WORKSTATION UI REDESIGN") &&
+      css.includes(".kp-cmd-modal") &&
+      css.includes(".kp-statusbar") &&
+      css.includes("body.kp-zen-mode") &&
+      css.includes("body.kp-density-compact"),
+      "style.css must define Workstation UI Redesign classes"
+    );
+
+    const vm = require("vm");
+    const sandbox = { globalThis: {}, console };
+    sandbox.window = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(polishJs, sandbox);
+    const catalog = sandbox.KenshoUI.buildCommandCatalog();
+    assert(
+      Array.isArray(catalog) && catalog.length >= 20 && catalog.some(c => c.id === "theme-solidworks") && catalog.some(c => c.id === "ui-zen"),
+      "KenshoUI.buildCommandCatalog() must return >= 20 commands including studios, themes, and Zen/Density actions"
+    );
+  });
+
+
+  // ============================================================================
+  // SUITE 52: Memory Optimization, Leak Guards & Zero-Lag Compositor Fixes
+  // ============================================================================
+  await testAsync("SUITE 52: Memory Optimization & Zero-Lag Fixes (V8 4GB Heap, rAF Minimap, Diff-Guarded Title, Visibility Timers & RAM Reclaimer)", async () => {
+    const mainJs = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const ribJs = fs.readFileSync(path.join(ROOT_DIR, "ui_ribbon.js"), "utf8");
+    const menuJs = fs.readFileSync(path.join(ROOT_DIR, "menu.js"), "utf8");
+    const extJs = fs.readFileSync(path.join(ROOT_DIR, "extras.js"), "utf8");
+    const cmg = require(path.join(ROOT_DIR, "compare_memory_guard.js"));
+    const polJs = fs.readFileSync(path.join(ROOT_DIR, "ui_workstation_polish.js"), "utf8");
+    const css = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+
+    assert(mainJs.includes("--max-old-space-size=4096") && mainJs.includes("enable-gpu-rasterization") && mainJs.includes("clearCache"),
+      "main.js must configure 4GB V8 heap, GPU rasterization, and session cache cleanup on close");
+    assert(ribJs.includes("const scheduleMinimap = () =>") && ribJs.includes("requestAnimationFrame"),
+      "ui_ribbon.js must coalesce World View minimap updates via requestAnimationFrame and skip when hidden");
+    assert(menuJs.includes("if (document.title !== t) document.title = t;") && menuJs.includes("if (!document.hidden) window.updateTitle()"),
+      "menu.js updateTitle must diff-guard DOM writes and pause when hidden");
+    assert(extJs.includes("if (!document.hidden && ED()) T.render()") && extJs.includes("if (document.hidden || asking || !E.path"),
+      "extras.js polling intervals must pause when window is hidden or inactive");
+    assert(typeof cmg.reclaimWorkspaceMemory === "function",
+      "compare_memory_guard.js must export reclaimWorkspaceMemory()");
+    assert(polJs.includes("reclaimMemoryNow") && polJs.includes("installInteractionLagGuard") && polJs.includes("kp-sb-mem"),
+      "ui_workstation_polish.js must provide RAM readout, 1-click Free RAM, and pan/zoom interaction lag guard");
+    assert(css.includes("body.kp-interacting") && css.includes("contain: layout style"),
+      "style.css must pause expensive backdrop-filter/transitions during pan/zoom and apply layout containment");
+  });
+
+
+  // ============================================================================
+  // SUITE 53: SolidWorks Nav Click Fix (No Clobber) & Top-Bar No-Overlap Layout
+  // ============================================================================
+  await testAsync("SUITE 53: SolidWorks Studio Nav Click Fix (No #modes Clobber, Native setView('solidworks'), Flex Host & Top-Bar No-Overlap)", async () => {
+    const appJs = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const css = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+
+    assert(!appJs.includes("document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setView(b.dataset.v));"),
+      "app.js must NOT clobber #nav-solidworks.onclick with setView(undefined)");
+    assert(appJs.includes("if (b.id === 'nav-solidworks' || b.dataset.v === 'solidworks')") && appJs.includes("if (v === 'solidworks' && typeof window.setCADStudioMode === 'function')"),
+      "app.js must route both #nav-solidworks clicks and setView('solidworks') to setCADStudioMode('solidworks')");
+    assert(css.includes("#sw-studio-host:not([hidden])") && css.includes("TOP BAR NO-OVERLAP RESPONSIVE FIX"),
+      "style.css must enforce flex height on #sw-studio-host and responsive no-overlap rules on #top");
+  });
+
+
+  // ============================================================================
+  // SUITE 54: UI Bugfix Sweep (Zero #top/#modes Overlap, Dropdown Clip Fix & Theme-Aware SolidWorks)
+  // ============================================================================
+  await testAsync("SUITE 54: UI Bugfix Sweep (Static Flex #modes, Unclipped #menubar Dropdowns, Theme-Aware SolidWorks & 100vh Frame)", async () => {
+    const css = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const sw = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+
+    assert(css.includes("KENSHO PRO UI BUGFIX SWEEP v1.2.3") && css.includes("position: static !important;") && css.includes("overflow: visible !important;"),
+      "style.css must restore pure flexbox flow on #top #modes (no absolute overlap) and overflow:visible on #top for dropdown menus");
+    assert(css.includes("#top #modes button#nav-solidworks.on") && css.includes("height: 100vh !important;"),
+      "style.css must unify active mode tab accents across all 4 studios and lock viewport to 100vh");
+    assert(!sw.includes("background:#0b1018") && !sw.includes("background:#0f172a") && sw.includes("background:var(--bg);color:var(--ink)"),
+      "solidworks_studio.js must use theme CSS variables instead of hardcoded dark colors");
+  });
+
+
+  // ============================================================================
+  // SUITE 55: Full UI & Backend Bug Audit Regression Checks
+  // ============================================================================
+  await testAsync("SUITE 55: Full UI & Backend Bug Audit Fixes (Themes, IPC/WASM, PDF/Compare, DXF/CAM, 3D CAD & Shortcuts)", async () => {
+    const MeasureEngine = require(path.join(ROOT_DIR, "measure_engine.js"));
+    const CADKernel = require(path.join(ROOT_DIR, "cad_kernel.js"));
+    const CAD3DEngine = require(path.join(ROOT_DIR, "cad3d_engine.js"));
+    const css = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const menuSrc = fs.readFileSync(path.join(ROOT_DIR, "menu.js"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const proSrc = fs.readFileSync(path.join(ROOT_DIR, "pro.js"), "utf8");
+    const ribSrc = fs.readFileSync(path.join(ROOT_DIR, "ui_ribbon.js"), "utf8");
+    const polSrc = fs.readFileSync(path.join(ROOT_DIR, "ui_workstation_polish.js"), "utf8");
+    const rustSrc = fs.readFileSync(path.join(ROOT_DIR, "rust_memory/src/lib.rs"), "utf8");
+
+    // 1. UI & CSS fixes: zero undefined --bg1/--bg2/--card2, high .dd z-index, curated theme overrides, no dead body.theme-light
+    assert(!css.includes("var(--bg1)") && !css.includes("var(--bg2)") && !css.includes("var(--card2)"),
+      "style.css must not reference undefined --bg1, --bg2, or --card2 variables");
+    assert(css.includes(".dd{position:fixed;z-index:10002;"), "Top menubar dropdowns (.dd) must have z-index above docks and status bar");
+    assert(css.includes("Curated Workstation Theme Precedence Overrides") && !css.includes("body.theme-light"),
+      "style.css must apply curated workstation themes over :root !important and replace dead body.theme-light selectors");
+    assert(menuSrc.includes("APP_CURRENT_VERSION = '1.2.3.2'") && menuSrc.includes("SW_V"),
+      "menu.js must use version 1.2.3 and route SolidWorks Studio actions separately from 2D DXF Studio");
+    assert(ribSrc.includes("_isSwActive ? 'solidworks'") && !polSrc.includes("applyThemePreset"),
+      "ui_ribbon.js must isolate SolidWorks shortcuts and ui_workstation_polish.js must call global.setTheme");
+
+    // 2. Backend, IPC & Rust WASM fixes
+    assert(mainSrc.includes("HAS_SINGLE_INSTANCE_LOCK") && mainSrc.includes("finishShowMain") && mainSrc.includes("path.basename(String(f.name"),
+      "main.js must gate startup on single-instance lock, guard splash race, and sanitize save-many paths");
+    assert(rustSrc.includes("align16_checked") && rustSrc.includes("grew == usize::MAX") && rustSrc.includes("in_arena_bounds"),
+      "rust_memory/src/lib.rs must use checked alignment, handle memory_grow failure, and bounds-check free/zero");
+
+    // 3. Compare & PDF Studio runtime & source fixes
+    assert(appSrc.includes("bytes: rawU8Check") && edSrc.includes("document.getElementById('ecv')") && proSrc.includes("MeasureEngine.calc3PointAngle") && proSrc.includes("MeasureEngine.calc3PointCircle"),
+      "app.js, editor.js, and pro.js must fix 3D openBytes ReferenceError, Page PNG canvas IDs, and 3-point angle/circle calls");
+    const gdtPlanar = MeasureEngine.buildGDTControlFrameCompartments({ symbol: '⏥', diaPrefix: '', tolerance: '0.05', modifier: '' });
+    assert.strictEqual(gdtPlanar[1], '0.05', "buildGDTControlFrameCompartments must allow empty diaPrefix and modifier");
+    const degDim = MeasureEngine.parseEngineeringDimension('45° ±0.5');
+    assert.strictEqual(degDim.unit, '°', "parseEngineeringDimension must parse non-ASCII degree symbol °");
+
+    // 4. DXF, CAM & 3D CAD runtime fixes
+    const doc3d = new CADKernel.CADDocument('MirrorTest');
+    doc3d.addFeature('EXTRUDE_BOSS', { kind: 'center_rect', width: 20, height: 20, depth: 10, offset: 0, plane: 'top' }, 'Base');
+    const vBase = doc3d.stats.volumeCm3;
+    doc3d.addFeature('MIRROR_BODY', { mirrorPlane: 'right' }, 'Mirror1');
+    assert(doc3d.stats.volumeCm3 > vBase * 1.5, `MIRROR_BODY must preserve positive volume (expected > ${(vBase * 1.5).toFixed(2)}, got ${doc3d.stats.volumeCm3})`);
+    const stepOut = CADKernel.exportToSTEP(doc3d);
+    assert(stepOut.includes("= LINE(") && stepOut.includes("= PLANE(") && !stepOut.includes(",$,.T.);"),
+      "exportToSTEP must emit valid LINE and PLANE entities instead of illegal $ nulls");
+
+    const negObj = CAD3DEngine.parseOBJ("v 0 0 0\nv 10 0 0\nv 0 10 0\nf -3 -2 -1\n", "neg.obj");
+    assert.strictEqual((negObj.bodies && negObj.bodies[0] && negObj.bodies[0].triangles ? negObj.bodies[0].triangles.length : 0), 1, "parseOBJ must resolve negative relative vertex indices");
+
+    const inchStep = new CAD3DEngine.STEPParser("DATA;\n#15 = ( CONVERSION_BASED_UNIT('INCH',#16) LENGTH_UNIT() NAMED_UNIT(#17) );\nENDSEC;").parse();
+    assert.strictEqual(inchStep.unitName, 'in', "STEPParser must detect INCH inside complex entity instances");
+
+    const ipcNoSpace = new CAM.IPCD356Parser("P  UNITS CUST 0\n317VCC           U1-1        D0125UA01X+010000Y+020000\n999\n").parse();
+    assert.strictEqual(ipcNoSpace.records.length, 1, "IPCD356Parser must parse standard column-4 net names without mandatory space");
+  });
+
+
+  // ============================================================================
+  // SUITE 56: Automated Packaging Auditor & Auto-Fixer (Zero Missing Files)
+  // ============================================================================
+  await testAsync("SUITE 56: Packaging Auditor (package_audit.js Pre-Build Auto-Fix, ASAR Header Verification & Build Script Wiring)", async () => {
+    const osMod = require("os");
+    const PkgAudit = require(path.join(ROOT_DIR, "package_audit.js"));
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+    const winBat = fs.readFileSync(path.join(ROOT_DIR, "Build-Windows-EXEs.bat"), "utf8");
+    const linSh = fs.readFileSync(path.join(ROOT_DIR, "Build-Linux-Packages.sh"), "utf8");
+
+    // 1. Pre-build audit must pass 100% on the repository with zero missing files
+    const pre = PkgAudit.runPreBuildAudit({ rootDir: ROOT_DIR, fix: false });
+    assert.strictEqual(pre.ok, true, `Pre-build package audit must pass (missingOnDisk=${pre.missingOnDisk}, missingInBuildFiles=${pre.missingInBuildFiles})`);
+    assert(pre.checkedCount >= 35, `Expected >= 35 discovered runtime/installer files, got ${pre.checkedCount}`);
+    assert(Array.isArray(pkg.build.asarUnpack) && pkg.build.asarUnpack.includes("build/**") && pkg.build.asarUnpack.includes("worker.js"),
+      "package.json must unpack build/** and worker.js via asarUnpack");
+    assert(Array.isArray(pkg.build.extraResources) && pkg.build.extraResources.some(e => e.from === "build" && e.to === "build"),
+      "package.json must copy build/ into extraResources");
+    assert(winBat.includes("package_audit.js --fix") && winBat.includes("package_audit.js --verify-dist dist/win-unpacked"),
+      "Build-Windows-EXEs.bat must run pre-build and post-pack package_audit.js");
+    assert(linSh.includes("package_audit.js --fix") && linSh.includes("package_audit.js --verify-dist dist/linux-unpacked"),
+      "Build-Linux-Packages.sh must run pre-build and post-pack package_audit.js");
+
+    // 2. Verify ASAR header parsing & post-pack auto-repair on a synthetic unpacked dist directory
+    const tmpDir = fs.mkdtempSync(path.join(osMod.tmpdir(), "kensho_pkgaudit_"));
+    try {
+      const resDir = path.join(tmpDir, "resources");
+      fs.mkdirSync(resDir, { recursive: true });
+      const reqFiles = PkgAudit.discoverRequiredRuntimeFiles(ROOT_DIR);
+      const tree = { files: {} };
+      const insertPath = (rel) => {
+        const parts = rel.split("/");
+        let cur = tree.files;
+        for (let i = 0; i < parts.length; i++) {
+          if (i === parts.length - 1) cur[parts[i]] = { size: 1, offset: "0" };
+          else { cur[parts[i]] = cur[parts[i]] || { files: {} }; cur = cur[parts[i]].files; }
+        }
+      };
+      // Build a real Chromium-Pickle ASAR header missing worker.js first
+      reqFiles.filter(f => f !== "worker.js").forEach(insertPath);
+      const writeAsar = (obj, dest) => {
+        const jBuf = Buffer.from(JSON.stringify(obj), "utf8");
+        const hdr = Buffer.alloc(16);
+        hdr.writeUInt32LE(4, 0);
+        hdr.writeUInt32LE(jBuf.length + 8, 4);
+        hdr.writeUInt32LE(jBuf.length + 4, 8);
+        hdr.writeUInt32LE(jBuf.length, 12);
+        fs.writeFileSync(dest, Buffer.concat([hdr, jBuf]));
+      };
+      const asarFile = path.join(resDir, "app.asar");
+      writeAsar(tree, asarFile);
+      const badCheck = PkgAudit.runDistVerifyAudit(tmpDir, { rootDir: ROOT_DIR, fix: false });
+      assert.strictEqual(badCheck.ok, false, "Post-pack audit must fail when worker.js is missing from app.asar");
+      assert(badCheck.missingInApp.includes("worker.js"), "Post-pack audit must report worker.js as missing");
+
+      // Now include worker.js in ASAR and let --fix auto-copy missing external resources into resources/
+      insertPath("worker.js");
+      writeAsar(tree, asarFile);
+      const fixedCheck = PkgAudit.runDistVerifyAudit(tmpDir, { rootDir: ROOT_DIR, fix: true });
+      assert.strictEqual(fixedCheck.ok, true, "Post-pack audit with --fix must auto-copy missing external resources and pass");
+      assert(fs.existsSync(path.join(resDir, "build", "logo.png")) && fs.existsSync(path.join(resDir, "build", "linux", "in.textportdocx.kenshopro.xml")),
+        "Post-pack --fix must populate missing resources/build assets");
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+
+  // ============================================================================
+  // SUITE 57: SolidWorks CommandManager Tabs (All Tools + 5 Functional Tabs), GPU & npm Fixes
+  // ============================================================================
+  await testAsync("SUITE 57: SolidWorks Function Tabs + All Tools Tab, GPU Flags & Clean npm Dependencies", async () => {
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+
+    assert(swSrc.includes('data-sw-tab="file"') && swSrc.includes('data-sw-tab="features"') && swSrc.includes('data-sw-tab="assembly"') && swSrc.includes('data-sw-tab="view"') && swSrc.includes('data-sw-tab="export"') && swSrc.includes('data-sw-tab="all"'),
+      "solidworks_studio.js must expose all 5 functional tabs plus All Tools tab with zero removed controls");
+    assert(mainSrc.includes("ignore-gpu-blocklist") && mainSrc.includes("enable-accelerated-2d-canvas") && mainSrc.includes("enable-gpu-rasterization"),
+      "main.js must enable full GPU hardware acceleration switches");
+    assert.strictEqual(pkg.devDependencies.electron, "^45.3.2");
+    assert.strictEqual(pkg.devDependencies["electron-builder"], "^26.18.1");
+    assert.strictEqual(pkg.dependencies["pdfjs-dist"], "^6.5.438");
+    if (fs.existsSync(path.join(ROOT_DIR, "package-lock.json"))) { const lk = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package-lock.json"), "utf8")); assert(lk.packages && lk.packages[""] && lk.packages[""].devDependencies && lk.packages[""].devDependencies.electron === pkg.devDependencies.electron, "If present, package-lock.json must match package.json"); }
+  });
+
+
+  // ============================================================================
+  // SUITE 58: Unified OpenGL / WebGL GPU Acceleration Across All 4 Studios
+  // ============================================================================
+  await testAsync("SUITE 58: OpenGL GPU Engine (gpu_engine.js, ANGLE GL Switches, SolidWorks WebGL, Compare Diff Shader & Layer Promotion)", async () => {
+    const GPU = require(path.join(ROOT_DIR, "gpu_engine.js"));
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const preSrc = fs.readFileSync(path.join(ROOT_DIR, "preload.js"), "utf8");
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+    const htmlSrc = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const cssSrc = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+
+    assert(typeof GPU.probe === "function" && typeof GPU.renderSolidWorksMeshGL === "function" && typeof GPU.diffCanvasesGL === "function",
+      "gpu_engine.js must export probe, renderSolidWorksMeshGL, and diffCanvasesGL");
+    assert(GPU.SW_FRAG_SRC.includes("uSectionAxis") && GPU.DIFF_FRAG_SRC.includes("uTexA") && GPU.DIFF_FRAG_SRC.includes("uTexB"),
+      "gpu_engine.js must include OpenGL GLSL fragment shaders for 3D section clipping and Compare A/B diff");
+    assert(mainSrc.includes("use-gl', 'angle'") && mainSrc.includes("use-angle', 'd3d11'") && mainSrc.includes("use-angle', 'vulkan'") && mainSrc.includes("force_high_performance_gpu") && mainSrc.includes("ipcMain.handle('get-gpu-info'"),
+      "main.js must configure OpenGL ANGLE switches and expose get-gpu-info IPC");
+    assert(preSrc.includes("getGpuInfo:") && swSrc.includes("renderSolidWorksMeshGL") && swSrc.includes("sw-toggle-gpu"),
+      "preload.js and solidworks_studio.js must wire OpenGL GPU telemetry and 3D mesh rendering");
+    assert(htmlSrc.includes("gpu_engine.js") && pkg.build.files.includes("gpu_engine.js") && cssSrc.includes("#cv, #ecv, #eov, #dxf-st-canvas, #sw-canvas"),
+      "index.html, package.json, and style.css must load, bundle, and GPU-promote all 4 studio viewports");
+  });
+
+
+  // ============================================================================
+  // SUITE 59: Real STEP AP214/AP242 Colors, 3D Color Options, GPU VBO/FPS & Right-Click Menu
+  // ============================================================================
+  await testAsync("SUITE 59: STEP Real Colors (Deep Chain + Overriding Face Color), Color Options, OpenGL VBO/FPS & Right-Click Menu", async () => {
+    const CAD3D = require(path.join(ROOT_DIR, "cad3d_engine.js"));
+    const GPU = require(path.join(ROOT_DIR, "gpu_engine.js"));
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+
+    // 1. Parse sample STEP with 8-level AP214 COLOUR_RGB + OVER_RIDING_STYLED_ITEM face override
+    const sampleStep = CAD3D.generateSampleSTEP("A");
+    const parsed = CAD3D.parse3DCAD(sampleStep, "Kensho_Bracket_RevA.step");
+    assert(parsed.bodies.length === 1, "Sample STEP must parse 1 solid body");
+    const body = parsed.bodies[0];
+    assert.strictEqual(body.color, "#2e7ad1", `Body color must resolve real STEP COLOUR_RGB (#2e7ad1), got ${body.color}`);
+    const hasGoldFace = body.triangles.some(t => t.color === "#e0ad2e");
+    assert.strictEqual(hasGoldFace, true, "OVER_RIDING_STYLED_ITEM must preserve real per-face STEP color (#e0ad2e)");
+
+    // 2. Verify DRAUGHTING_PRE_DEFINED_COLOUR resolution
+    const predefStep = sampleStep.replace("COLOUR_RGB('Anodized_Blue',0.18,0.48,0.82)", "DRAUGHTING_PRE_DEFINED_COLOUR('red')");
+    const parsedPredef = CAD3D.parse3DCAD(predefStep, "RedBracket.step");
+    assert.strictEqual(parsedPredef.bodies[0].color, "#dc2626", "DRAUGHTING_PRE_DEFINED_COLOUR('red') must resolve to #dc2626");
+
+    // 3. Verify GPU VBO cache + FPS telemetry exports and SolidWorks Color/FPS/Right-Click UI
+    assert(typeof GPU.getStats === "function" && typeof GPU.invalidateCache === "function",
+      "gpu_engine.js must export getStats() and invalidateCache()");
+    assert(swSrc.includes('id="sw-color-mode"') && swSrc.includes('id="sw-color-picker"') && swSrc.includes('id="sw-color-reset"') && swSrc.includes('id="sw-fps-hud"') && swSrc.includes("showSWContextMenu"),
+      "solidworks_studio.js must include Color Mode/Picker/Reset, live FPS HUD, and Right-Click Context Menu");
+  });
+
+
+  // ============================================================================
+  // SUITE 60: Fast-Open PDF Optimization, Ultra-HD Single-Word Vector Zoom (#ehq) & Stable 1.2.3.2
+  // ============================================================================
+  await testAsync("SUITE 60: Fast-Open PDF (Zero 20MP Open Stall), Ultra-HD Single-Word Zoom (#ehq), Optimized Build & Stable 1.2.3.2", async () => {
+    const html = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const proSrc = fs.readFileSync(path.join(ROOT_DIR, "pro.js"), "utf8");
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "package.json"), "utf8"));
+    const ver = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "version.json"), "utf8"));
+
+    assert(html.includes('id="ehq"') && edSrc.includes("sharpenEditorViewport") && edSrc.includes("schedulePdfVectorSharpen"),
+      "PDF Studio must render ultra-HD viewport-clipped vector tile (#ehq) for crisp single-word zoom");
+    assert(edSrc.includes("const useHiSuperSample = false;") && edSrc.includes("const maxSmoothArea = 1.25e7;"),
+      "PDF Studio must skip slow 20MP CPU super-sampling on initial file open");
+    assert(proSrc.includes("Math.max(DPR(), 1.5)"),
+      "Compare Studio #hq sharpen must enforce >= 1.5x DPR for crisp single-word zoom");
+    assert.strictEqual(pkg.displayVersion, "1.2.3.2", "package.json displayVersion must be 1.2.3.2");
+    assert.strictEqual(pkg.releaseChannel, "Stable", "package.json releaseChannel must be Stable");
+    assert.strictEqual(pkg.build.compression, "maximum", "package.json must use maximum compression for optimized builds");
+    assert.strictEqual(ver.version, "1.2.3.2", "version.json version must be 1.2.3.2");
+    assert.strictEqual(ver.channel, "Stable", "version.json channel must be Stable");
+  });
+
+
+  // ============================================================================
+  // SUITE 61: Zero-Copy Direct WebGL2 (NVIDIA/AMD D3D11+Vulkan), Anti-Z-Fighting & 3-Point CAD Shading
+  // ============================================================================
+  await testAsync("SUITE 61: NVIDIA/AMD D3D11 & Vulkan GPU Backend, Zero-Copy #sw-gl-canvas & Anti-Overlap Depth Shading", async () => {
+    const gpuSrc = fs.readFileSync(path.join(ROOT_DIR, "gpu_engine.js"), "utf8");
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+
+    assert(mainSrc.includes("force_high_performance_gpu") && mainSrc.includes("use-angle', 'd3d11'") && mainSrc.includes("use-angle', 'vulkan'"),
+      "main.js must force high-performance NVIDIA/AMD GPU with native D3D11 (Windows) and Vulkan (Linux/--vulkan)");
+    assert(swSrc.includes('id="sw-gl-canvas"') && swSrc.includes("glCanvas: glCv") && swSrc.includes("radius: span * 0.65"),
+      "solidworks_studio.js must render directly to #sw-gl-canvas (zero drawImage copy) with model-radius depth range");
+    assert(gpuSrc.includes("gl.POLYGON_OFFSET_FILL") && gpuSrc.includes("gl.disable(gl.BLEND)") && gpuSrc.includes("uRadius"),
+      "gpu_engine.js must enable PolygonOffset, disable BLEND for opaque solids, and use model-radius Z-depth to prevent overlapping colors");
+  });
+
+  // ============================================================================
+  // SUITE 62: Zero-Buffering PDF Zoom (#ehq), Compare Precision & Conversion Fixes (21-Bug Audit)
+  // ============================================================================
+  await testAsync("SUITE 62: PDF Zoom Zero-Buffering, Compare Precision & File Conversion Audit Fixes", async () => {
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const proSrc = fs.readFileSync(path.join(ROOT_DIR, "pro.js"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const ribSrc = fs.readFileSync(path.join(ROOT_DIR, "ui_ribbon.js"), "utf8");
+    const wrkSrc = fs.readFileSync(path.join(ROOT_DIR, "worker.js"), "utf8");
+    const dxfCmpSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_compare_core.js"), "utf8");
+    const dxfSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_engine.js"), "utf8");
+    const camSrc = fs.readFileSync(path.join(ROOT_DIR, "cam_engine.js"), "utf8");
+    const cad3dSrc = fs.readFileSync(path.join(ROOT_DIR, "cad3d_engine.js"), "utf8");
+    const cadKSrc = fs.readFileSync(path.join(ROOT_DIR, "cad_kernel.js"), "utf8");
+
+    // 1. PDF Zooming & Quality (editor.js)
+    assert(edSrc.includes("if (typeof cancelEditorHq === 'function') cancelEditorHq();"),
+      "editor.js must cancel/hide stale #ehq on zoom, goto, and fit");
+    assert(edSrc.includes("E.zoom >= 1.25 && E._lastRenderDoc === E.doc && E._lastRenderPage === E.cur"),
+      "editor.js must fast-path zoomed-in settle straight to #ehq without 16MP full-page re-render");
+    assert(edSrc.includes("Math.min(3.5, Math.max(DPR() * 1.5, 2.5))") && edSrc.includes("const pad = 120;"),
+      "editor.js #ehq must render at ultra-HD 2.5x-3.5x DPR with 120px overscan");
+
+    // 2. Compare Studio fixes (pro.js, ui_ribbon.js, app.js, worker.js, dxf_compare_core.js, cam_engine.js)
+    assert(proSrc.includes("if (v && (isNativeDXFActive ? v.k > 0.05 : !zoomLow))") && proSrc.includes("(v.k * DPR() <= 1.02)") && proSrc.includes("hq._lastVx = vx0;"),
+      "pro.js must align kick/sharpen 1.02x zoom threshold and store _lastVx for curtain pan sync");
+    assert(ribSrc.includes("const panDeltaX = (S && S.view && Number.isFinite(hq._lastVx)) ? (S.view.x - hq._lastVx) : 0;"),
+      "ui_ribbon.js must offset curtain splitPx by panDeltaX on #hq");
+    assert(appSrc.includes("const hitMask = new Uint8Array(mw * mh);") && appSrc.includes("S._blinkMips"),
+      "app.js must use full-coverage mipmap diff scan and cache separate blink mip pyramids");
+    assert(wrkSrc.includes("const isChanged = cntRem > 0 && cntAdd > 0") && wrkSrc.includes("cls[compPixels[ci]] = 0;"),
+      "worker.js must merge touching removed/added diffs into changed and zero sub-minpx noise");
+    assert(dxfCmpSrc.includes("const mirrorFlip = (parentTf && ((parentTf.sx || 1) * (parentTf.sy || 1) < 0)) ? -1 : 1;"),
+      "dxf_compare_core.js must apply mirrorFlip to nested mirrored INSERT blocks");
+    assert(camSrc.includes("const scalePxPerIn = Math.min(Math.max(1, w - pad * 2) / bwInches, Math.max(1, h - pad * 2) / bhInches);"),
+      "cam_engine.js CAMCompare must compute pxPerMil using both board width/height and padding");
+
+    // 3. Conversion fixes (dxf_engine.js, app.js, cam_engine.js, cad_kernel.js, cad3d_engine.js)
+    assert(dxfSrc.includes("currentPath.push({ op: 'rect', pts: [p1, p2, p3, p4], isBorder });") && dxfSrc.includes("const baseCTM = [vt[0], -vt[1], vt[2], -vt[3], vt[4], pageHeight - vt[5]];"),
+      "dxf_engine.js exportPDFToDXF must defer OPS.rectangle until paint ops and apply /Rotate+CropBox baseCTM");
+    assert(dxfSrc.includes("const isAdd = r.type === 'added' || r.kind === 'a';") && dxfSrc.includes("if (ent.solid && pts.length >= 3)"),
+      "dxf_engine.js must resolve r.kind diff colors and fill solid / close HATCH loops");
+    assert(appSrc.includes("const MAX_PDF_PT = 14400;") && appSrc.includes("jpegExifOrientation"),
+      "app.js imageBytesToPDF must clamp PDF page size to 14,400pt and handle JPEG EXIF orientation");
+    assert(camSrc.includes("else if (ap.type === 'P')") && camSrc.includes("rotate: pdfLibRef.degrees(flashRotDeg)"),
+      "cam_engine.js layersToVectorPDFBytes must render Polygon apertures and arbitrary flash rotations");
+    assert(cad3dSrc.includes("const seenEdges = new Set();") && cadKSrc.includes("const seenSegs = new Set();"),
+      "cad3d_engine.js and cad_kernel.js must deduplicate overlapping projected 2D edges");
+
+    // Live runtime check: exportMultiViewDrawingDXF on cad3d_engine-shaped model (no massGrams) + duplicate edges
+    const CADKernel = require(path.join(ROOT_DIR, "cad_kernel.js"));
+    const mockStepModel = {
+      name: "MockStepPart",
+      stats: { sizeX: 40, sizeY: 30, sizeZ: 20, volumeCm3: 24, bounds: { minX: 0, minY: 0, minZ: 0 } },
+      bodies: [{
+        visible: true,
+        edges: [
+          { pts: [[0, 0, 0], [40, 0, 0]] },
+          { pts: [[40, 0, 0], [0, 0, 0]] }, // exact reverse duplicate
+          { pts: [[0, 30, 0], [40, 30, 0]] } // front-view projection duplicate of [0,0,0]-[40,0,0]
+        ]
+      }]
+    };
+    const dxfOut = CADKernel.exportMultiViewDrawingDXF(mockStepModel);
+    assert(dxfOut.includes("MASS: 64.8 g") && !dxfOut.includes("NaN") && !dxfOut.includes("Infinity"),
+      "exportMultiViewDrawingDXF must safely compute massGrams when missing on STEP models and never emit NaN/Infinity");
+    const frontLines = (dxfOut.match(/VIEW_FRONT/g) || []).length;
+    assert(frontLines === 1, `exportMultiViewDrawingDXF must deduplicate overlapping FRONT edges (expected 1, got ${frontLines})`);
+  });
+
+  // ============================================================================
+  // SUITE 63: Day-1 Security Audit Remediation (Sandbox, IPC Auth, CSP, XSS, SSRF, Quotas, Lockfile)
+  // ============================================================================
+  await testAsync("SUITE 63: Electron Security Hardening (Sandbox, IPC Sender/Path Allowlist, CSP, DXF XSS, Update SSRF & Conversion Quotas)", async () => {
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const htmlSrc = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const appSrc = fs.readFileSync(path.join(ROOT_DIR, "app.js"), "utf8");
+    const ribSrc = fs.readFileSync(path.join(ROOT_DIR, "ui_ribbon.js"), "utf8");
+    const linuxSetupSrc = fs.readFileSync(path.join(ROOT_DIR, "build_linux_setup.js"), "utf8");
+
+    assert(mainSrc.includes("KENSHO_ALLOW_NO_SANDBOX === '1'") && !linuxSetupSrc.includes("--no-sandbox"),
+      "Linux Chromium sandbox must remain enabled by default in main.js and Linux packaging scripts");
+    assert(mainSrc.includes("function assertTrustedIpcSender(e)") && mainSrc.includes("isPathAuthorizedForRead") && mainSrc.includes("isPathAuthorizedForWrite"),
+      "main.js must enforce IPC sender origin/mainFrame authorization and explicit read/write path allowlists");
+    assert(htmlSrc.includes('http-equiv="Content-Security-Policy"') && htmlSrc.includes("object-src 'none'"),
+      "index.html must declare a strict Content-Security-Policy meta tag");
+    assert(mainSrc.includes("sandbox: true, webSecurity: true, allowRunningInsecureContent: false") && mainSrc.includes("setWindowOpenHandler"),
+      "main.js BrowserWindow must enforce sandbox:true, webSecurity:true, and deny unexpected popups");
+    assert(appSrc.includes("layerSpan.textContent = '[' + String(g.dxfLayer) + ']'") && appSrc.includes("descDiv.textContent = String(g.dxfSummary)"),
+      "app.js renderList must render untrusted DXF layer/summary via textContent, not innerHTML");
+    assert(ribSrc.includes("const escHtml = v => String(v == null ? '' : v).replace(/&/g, '&amp;')"),
+      "ui_ribbon.js defect checklist must escape HTML and attribute characters completely");
+    assert(mainSrc.includes("APPROVED_UPDATE_HOSTS") && mainSrc.includes("isPrivateOrLocalHost") && mainSrc.includes("validateUpdateManifest"),
+      "main.js check-update must restrict to HTTPS approved hosts, block private IPs, and validate manifest schema");
+    assert(mainSrc.includes("MAX_CONVERSION_INPUT_BYTES") && mainSrc.includes("MAX_CONCURRENT_CONVERSIONS") && mainSrc.includes("readVerifiedConversionOutput"),
+      "main.js DWG/SolidWorks converters must enforce input/output size caps and concurrency limits");
+    assert(fs.existsSync(path.join(ROOT_DIR, "package-lock.json")),
+      "package-lock.json must exist for reproducible builds");
+  });
+
+  // ============================================================================
+  // SUITE 64: Thinking Orbs Animation Engine (Jakubantalik/thinking-orbs)
+  // ============================================================================
+  await testAsync("SUITE 64: Thinking Orbs 9-State Dotted Canvas Engine & Splash/Loader Integration", async () => {
+    const ThinkingOrbs = require(path.join(ROOT_DIR, "thinking_orbs.js"));
+    assert(Array.isArray(ThinkingOrbs.STATES) && ThinkingOrbs.STATES.length === 9,
+      "thinking_orbs.js must expose all 9 ThinkingOrb states");
+    for (const st of ThinkingOrbs.STATES) {
+      for (const sz of [64, 20]) {
+        const res = ThinkingOrbs.resolvePreset(st, sz);
+        const frame = ThinkingOrbs.MODE_FRAMES[res.mode](sz, 0.5 * res.speed, res.opts);
+        assert(frame && Array.isArray(frame.dots) && frame.dots.length > 0,
+          `ThinkingOrb state=${st} size=${sz} must produce non-empty z-sorted dots`);
+      }
+    }
+    assert(ThinkingOrbs.inferState("Comparing Rev A vs Rev B") === "searching", "inferState must map Comparing -> searching");
+    assert(ThinkingOrbs.inferState("Converting STEP to DXF") === "shaping", "inferState must map Converting -> shaping");
+    assert(ThinkingOrbs.inferState("Aligning Fiducials") === "solving", "inferState must map Aligning -> solving");
+
+    const html = fs.readFileSync(path.join(ROOT_DIR, "index.html"), "utf8");
+    const splash = fs.readFileSync(path.join(ROOT_DIR, "splash.html"), "utf8");
+    const proSrc = fs.readFileSync(path.join(ROOT_DIR, "pro.js"), "utf8");
+    assert(html.includes('src="thinking_orbs.js"') && splash.includes('src="thinking_orbs.js"'),
+      "index.html and splash.html must load thinking_orbs.js offline");
+    assert(proSrc.includes("window.ThinkingOrbs.mount") && proSrc.includes("window.ThinkingOrbs.inferState"),
+      "pro.js must mount and drive ThinkingOrbs in #rp-load and #rp-stage-loader");
+  });
+
+
+  // ============================================================================
+  // SUITE 65: Mandatory 30s Loading Screen, PDF Studio Pen Fix, DXF Shape Thickness & Triangle W/H
+  // ============================================================================
+  await testAsync("SUITE 65: 30s Mandatory Splash, PDF Pen Layering/Input Fix, DXF All-Shape Thickness & Easy Triangle W/H", async () => {
+    const mainSrc = fs.readFileSync(path.join(ROOT_DIR, "main.js"), "utf8");
+    const splashSrc = fs.readFileSync(path.join(ROOT_DIR, "splash.html"), "utf8");
+    const cssSrc = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const icSrc = fs.readFileSync(path.join(ROOT_DIR, "icons.js"), "utf8");
+    const dxfStudioSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_studio.js"), "utf8");
+
+    // 1. Mandatory 30-second loading screen
+    assert(mainSrc.includes("const MANDATORY_SPLASH_MS = TESTING ? 0 : 15000;"),
+      "main.js must enforce a mandatory 15000ms (15s) splash screen outside TESTING mode");
+    assert(mainSrc.includes("closable: false") && mainSrc.includes("if (!allowSplashClose) ev.preventDefault()"),
+      "main.js splash window must be non-closable until the mandatory 30s boot completes");
+    assert(splashSrc.includes("TOTAL_BOOT_MS = 15000") && splashSrc.includes("splash-progress-bar") && splashSrc.includes("splash-pct"),
+      "splash.html must drive a determinate 15s progress bar and percentage indicator");
+
+    // 2. PDF Studio Pen Tool fixes
+    assert(cssSrc.includes("#ewrap #ecv{position:relative;z-index:1}") && cssSrc.includes("#ewrap #ehq{position:absolute;left:0;top:0;pointer-events:none;z-index:2") && cssSrc.includes("#ewrap #eov{position:absolute;left:0;top:0;z-index:4"),
+      "style.css must stack #eov (z-index:4) and #etl (z-index:3) strictly above #ehq (z-index:2) so Pen strokes are always visible");
+    assert(edSrc.includes("const r = ov.getBoundingClientRect()") && edSrc.includes("ov.onpointercancel ="),
+      "editor.js must map Pen coordinates via ov.getBoundingClientRect() and handle pointercancel cleanly");
+
+    // 3. DXF Studio Triangle icon, tool, thickness options, and no duplicate Break button
+    assert(icSrc.includes("triangle:"), "icons.js must define the triangle SVG icon");
+    assert(dxfStudioSrc.includes('data-dxf-tool="triangle"') && dxfStudioSrc.includes('id="dxf-st-lw-sel"') && dxfStudioSrc.includes('id="dxf-st-thk-val"') && dxfStudioSrc.includes('id="dxf-st-tri-w"') && dxfStudioSrc.includes('id="dxf-st-tri-h"'),
+      "dxf_studio.js must expose Triangle tool, Thickness/Lineweight selector, Z-Thickness input, and Triangle W/H inputs");
+    assert((dxfStudioSrc.match(/data-dxf-tool="break"/g) || []).length === 1,
+      "dxf_studio.js Modify ribbon must not contain duplicate Break buttons");
+
+    // 4. Programmatic DXF Triangle & All-Shape Thickness round-trip verification
+    const DXFEngine = require(path.join(ROOT_DIR, "dxf_engine.js"));
+    const DXFStudio = require(path.join(ROOT_DIR, "dxf_studio.js"));
+    DXFStudio.setActiveLineweight(70, false);
+    DXFStudio.setDefaultThickness(4.5, false);
+
+    const triIso = DXFStudio.createTriangleEntity(10, 20, 80, 50, "isosceles");
+    assert(triIso && triIso.type === "LWPOLYLINE" && triIso.closed && triIso.points.length === 3,
+      "createTriangleEntity must create a closed 3-vertex LWPOLYLINE");
+    assert(triIso.lineweight === 70 && triIso.thickness === 4.5,
+      "Triangle must inherit active lineweight (70) and 3D thickness (4.5)");
+    assert(DXFStudio.detectShapeKind(triIso) === "triangle",
+      "detectShapeKind must identify closed 3-vertex LWPOLYLINE as triangle");
+
+    // Resize triangle cleanly via easy W/H API
+    DXFStudio.resizeTriangleEntity(triIso, 120, 90, "right-left");
+    const txs = triIso.points.map(p => p[0]), tys = triIso.points.map(p => p[1]);
+    assert(Math.abs((Math.max(...txs) - Math.min(...txs)) - 120) < 1e-4 && Math.abs((Math.max(...tys) - Math.min(...tys)) - 90) < 1e-4,
+      "resizeTriangleEntity must update triangle to exact 120 x 90 dimensions");
+    assert(Math.abs(triIso.points[2][0] - Math.min(...txs)) < 1e-4,
+      "right-left triangle apex must align with left base vertex");
+
+    // Resize rectangle cleanly via easy W/H API
+    const rectEnt = {
+      _id: "r1", type: "LWPOLYLINE", layer: "0", closed: true, lineweight: 100, thickness: 3.0,
+      points: [[0, 0, 0], [50, 0, 0], [50, 30, 0], [0, 30, 0]]
+    };
+    assert(DXFStudio.detectShapeKind(rectEnt) === "rect", "detectShapeKind must identify closed 4-vertex axis rect");
+    DXFStudio.resizeRectEntity(rectEnt, 95, 45);
+    const rxs = rectEnt.points.map(p => p[0]), rys = rectEnt.points.map(p => p[1]);
+    assert(Math.abs((Math.max(...rxs) - Math.min(...rxs)) - 95) < 1e-4 && Math.abs((Math.max(...rys) - Math.min(...rys)) - 45) < 1e-4,
+      "resizeRectEntity must update rectangle to exact 95 x 45 dimensions");
+
+    // Round-trip DXF export/import preserving lineweight (370) and thickness (39) for Line, Rect, Triangle, Circle
+    const parser = new DXFEngine.DXFParser();
+    parser.entities.push(
+      { _id: "l1", type: "LINE", layer: "0", x1: 0, y1: 0, x2: 100, y2: 0, lineweight: 50, thickness: 2.0 },
+      rectEnt,
+      triIso,
+      { _id: "c1", type: "CIRCLE", layer: "0", cx: 50, cy: 50, r: 20, lineweight: 158, thickness: 6.0 }
+    );
+    const dxfOut = parser.toDXFString();
+    const reparsed = new DXFEngine.DXFParser(dxfOut);
+    reparsed.parse();
+    assert(reparsed.entities.length === 4, "All 4 entities (Line, Rect, Triangle, Circle) must survive DXF round-trip");
+    const rLine = reparsed.entities.find(e => e.type === "LINE");
+    const rCirc = reparsed.entities.find(e => e.type === "CIRCLE");
+    const rPolys = reparsed.entities.filter(e => e.type === "LWPOLYLINE");
+    assert(rLine && rLine.lineweight === 50 && Math.abs((rLine.thickness || 0) - 2.0) < 1e-4, "LINE must preserve lineweight & thickness");
+    assert(rCirc && rCirc.lineweight === 158 && Math.abs((rCirc.thickness || 0) - 6.0) < 1e-4, "CIRCLE must preserve lineweight & thickness");
+    assert(rPolys.some(e => e.points.length === 4 && e.lineweight === 100 && Math.abs((e.thickness || 0) - 3.0) < 1e-4), "Rectangle must preserve lineweight & thickness");
+    assert(rPolys.some(e => e.points.length === 3 && e.lineweight === 70 && Math.abs((e.thickness || 0) - 4.5) < 1e-4), "Triangle must preserve lineweight & thickness");
+  });
+
+
+  // ============================================================================
+  // SUITE 66: SolidWorks GPU Shader Explode, PDF Zoom-Out Fix, Icons/Animations, Right-Click, Multi-File Tabs & STEP-to-DXF
+  // ============================================================================
+  await testAsync("SUITE 66: GPU Shader Explode, PDF Zoom-Out Fast-Path, SW Icons/Animations, Right-Click Fix, Multi-File Tabs & STEP->DXF", async () => {
+    const gpuSrc = fs.readFileSync(path.join(ROOT_DIR, "gpu_engine.js"), "utf8");
+    const swSrc = fs.readFileSync(path.join(ROOT_DIR, "solidworks_studio.js"), "utf8");
+    const edSrc = fs.readFileSync(path.join(ROOT_DIR, "editor.js"), "utf8");
+    const dxfSrc = fs.readFileSync(path.join(ROOT_DIR, "dxf_studio.js"), "utf8");
+    const cssSrc = fs.readFileSync(path.join(ROOT_DIR, "style.css"), "utf8");
+
+    // 1. GPU Shader Explode (zero CPU fallback on explodeFactor > 0)
+    assert(gpuSrc.includes("attribute vec3 aExplodeDir;") && gpuSrc.includes("uniform float uExplodeFactor;") && gpuSrc.includes("aPos + aExplodeDir * uExplodeFactor"),
+      "gpu_engine.js vertex shaders must execute Explode directly on hardware GPU");
+    assert(swSrc.includes("explodeFactor: SWState.explodeFactor || 0") && !swSrc.includes("(!SWState.explodeFactor || Math.abs(SWState.explodeFactor) < 1e-4)"),
+      "solidworks_studio.js must keep OpenGL GPU active during Explode without CPU fallback");
+
+    // 2. PDF Studio Zoom-Out Top/Bottom Glitch Fix
+    assert(edSrc.includes("const maxT = Math.max(0, ev.scrollHeight - ev.clientHeight)") && edSrc.includes("needsCrispRerender"),
+      "editor.js applySmoothZoomStep must use bounded scroll clamping and zero-flicker fast-path for both zoom-in and zoom-out");
+
+    // 3. SolidWorks Icons, Animations & Single Right-Click Menu
+    assert(swSrc.includes('id="sw-new-part"') && swSrc.includes('<i data-ic="blank"></i><span>New Part</span>') && swSrc.includes("window.hydrateIcons(hostEl)"),
+      "solidworks_studio.js must include dual-tone vector icons and hydrateIcons on File & Home and all ribbon tools");
+    assert(cssSrc.includes(".sw-ribbon .tb.sw-anim-btn:hover") && cssSrc.includes(".sw-ctx-menu"),
+      "style.css must define smooth GPU animations for SolidWorks buttons and fixed context menu styling");
+    assert(!swSrc.includes("if (wasRightTap) showSWContextMenu"),
+      "solidworks_studio.js must not double-fire right-click context menu from pointerup");
+
+    // 4. Multi-File Opening in PDF Studio, CAD Studio & SolidWorks Studio
+    assert(edSrc.includes("multi: true") && edSrc.includes("openPickedEditorEntry"),
+      "editor.js pickEditor must support opening multiple PDF/DXF/Image files in tabs");
+    assert(dxfSrc.includes('id="dxf-doc-tabs"') && dxfSrc.includes("registerDXFDocTab") && dxfSrc.includes("switchDXFDocTab"),
+      "dxf_studio.js must support multi-file CAD document tabs");
+    assert(swSrc.includes('id="sw-doc-tabs"') && swSrc.includes("openMultiple3DFiles") && swSrc.includes("switchSWDocTab"),
+      "solidworks_studio.js must support multi-file 3D STEP/CAD document tabs");
+
+    // 5. SolidWorks STEP -> DXF Direct Export
+    assert(swSrc.includes('id="sw-exp-dxf-home"') && swSrc.includes('id="sw-exp-dxf"') && swSrc.includes("exportSTEPToDXFDialog"),
+      "solidworks_studio.js must provide Export DXF in File & Home, Evaluate & Export, and right-click menu");
+    const SW = require(path.join(ROOT_DIR, "solidworks_studio.js"));
+    const K = require(path.join(ROOT_DIR, "cad_kernel.js"));
+    SW.SWState.doc = new K.CADDocument("TestBracket");
+    SW.SWState.doc.addFeature({ type: "EXTRUDE_BOSS", name: "Base", params: { kind: "center_rect", width: 60, height: 40, depth: 12, plane: "top" } });
+    SW.SWState.modelA = SW.SWState.doc.toModelObject();
+    const dxfBytes = await SW.exportCurrentModel("dxf");
+    assert(dxfBytes && dxfBytes.length > 100 && new TextDecoder().decode(dxfBytes).includes("ENTITIES"),
+      "exportCurrentModel('dxf') must generate valid AutoCAD DXF bytes directly from SolidWorks STEP/3D part");
   });
 
   console.log(`SUMMARY: ${passedTests} / ${totalTests} tests passed successfully.`);

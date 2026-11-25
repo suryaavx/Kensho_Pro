@@ -3,11 +3,17 @@ const $ = s => document.querySelector(s);
 const ACT = window.ACT = window.ACT || {};
 const PREF = Object.assign({ dpi: 300, tol: 40, edge: 0, minpx: 2, startView: 'compare', confirmSave: true, scanMax: 12, perfMode: 'auto' }, (() => { try { return JSON.parse(localStorage.getItem('prefs') || '{}'); } catch (e) { return {}; } })());
 window.PREF = PREF; window.savePrefs = () => { try { localStorage.setItem('prefs', JSON.stringify(PREF)); } catch (e) {} };
+const APP_THEMES = ['dark', 'light', 'autocad', 'solidworks', 'blueprint', 'nord', 'amber', 'emerald'];
+const LIGHT_THEMES = new Set(['light', 'solidworks']);
 function setTheme(t) {
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('theme', t); } catch (e) {}
+  const eff = APP_THEMES.includes(t) ? t : 'dark';
+  const isLight = LIGHT_THEMES.has(eff);
+  document.documentElement.dataset.theme = eff;
+  try { localStorage.setItem('theme', eff); } catch (e) {}
+  const topSel = document.getElementById('theme-preset-sel');
+  if (topSel && topSel.value !== eff) topSel.value = eff;
   const sel = document.getElementById('kdock-theme-sel');
-  if (t === 'light') {
+  if (isLight) {
     if (sel && sel.value !== 'light') sel.value = 'light';
   } else {
     let savedPal = 'kensho';
@@ -22,13 +28,24 @@ function setTheme(t) {
   if (tb) {
     const icEl = tb.querySelector('[data-ic]');
     if (icEl) {
-      icEl.dataset.ic = t === 'dark' ? 'sun' : 'moon';
+      icEl.dataset.ic = isLight ? 'moon' : 'sun';
       if (typeof hydrateIcons === 'function') hydrateIcons(tb);
+    }
+  }
+  if (typeof window !== 'undefined' && window.SolidWorksStudio && window.SolidWorksStudio.SWState) {
+    window.SolidWorksStudio.SWState.background = isLight ? '#ffffff' : '#0c111a';
+    const swHost = document.getElementById('sw-studio-host');
+    if (swHost && !swHost.hidden && typeof window.SolidWorksStudio.render3DCanvas === 'function') {
+      window.SolidWorksStudio.render3DCanvas();
     }
   }
   if (typeof window !== 'undefined' && window.DXFStudio && typeof window.DXFStudio.renderCanvas === 'function' && document.body && document.body.dataset.view === 'dxf') {
     window.DXFStudio.renderCanvas();
   }
+}
+if (typeof document !== 'undefined') {
+  const _themePresetEl = document.getElementById('theme-preset-sel');
+  if (_themePresetEl) _themePresetEl.onchange = e => setTheme(e.target.value);
 }
 window.setTheme = setTheme;
 (function () { let t = null; try { t = localStorage.getItem('theme'); } catch (e) {} setTheme(t || 'dark'); })();
@@ -422,9 +439,38 @@ async function imageBytesToPDF(bytes, name) {
   let img = null;
   const isPng = /\.png$/i.test(name) || (u8[0] === 0x89 && u8[1] === 0x50);
   const isJpg = /\.jpe?g$/i.test(name) || (u8[0] === 0xFF && u8[1] === 0xD8);
+  // Detect JPEG EXIF orientation (tag 0x0112): if rotated/flipped (2..8), bake upright via browser canvas
+  let jpegExifOrientation = 1;
+  if (isJpg && u8.length > 12) {
+    try {
+      let off = 2;
+      while (off + 4 < u8.length && u8[off] === 0xFF) {
+        const marker = u8[off + 1];
+        const segLen = (u8[off + 2] << 8) | u8[off + 3];
+        if (segLen < 2) break;
+        if (marker === 0xE1 && off + 10 < u8.length && u8[off + 4] === 0x45 && u8[off + 5] === 0x78 && u8[off + 6] === 0x69 && u8[off + 7] === 0x66) {
+          const tiffStart = off + 10;
+          const le = u8[tiffStart] === 0x49 && u8[tiffStart + 1] === 0x49;
+          const r16 = p => le ? (u8[p] | (u8[p + 1] << 8)) : ((u8[p] << 8) | u8[p + 1]);
+          const r32 = p => le ? ((u8[p] | (u8[p + 1] << 8) | (u8[p + 2] << 16) | (u8[p + 3] << 24)) >>> 0) : (((u8[p] << 24) | (u8[p + 1] << 16) | (u8[p + 2] << 8) | u8[p + 3]) >>> 0);
+          const ifdOff = tiffStart + r32(tiffStart + 4);
+          if (ifdOff + 2 <= u8.length) {
+            const entries = r16(ifdOff);
+            for (let ei = 0; ei < entries; ei++) {
+              const ep = ifdOff + 2 + ei * 12;
+              if (ep + 12 > u8.length) break;
+              if (r16(ep) === 0x0112) { jpegExifOrientation = r16(ep + 8); break; }
+            }
+          }
+          break;
+        }
+        off += 2 + segLen;
+      }
+    } catch (_) {}
+  }
   if (isPng) {
     try { img = await doc.embedPng(u8); } catch (e) {}
-  } else if (isJpg) {
+  } else if (isJpg && jpegExifOrientation === 1) {
     try { img = await doc.embedJpg(u8); } catch (e) {}
   }
   if (!img && typeof document !== 'undefined') {
@@ -451,8 +497,15 @@ async function imageBytesToPDF(bytes, name) {
     }
   }
   if (!img) throw new Error('Unsupported image format');
-  const pg = doc.addPage([img.width, img.height]);
-  pg.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+  let pageW = img.width, pageH = img.height;
+  const MAX_PDF_PT = 14400;
+  if (Math.max(pageW, pageH) > MAX_PDF_PT) {
+    const s = MAX_PDF_PT / Math.max(pageW, pageH);
+    pageW = Math.max(1, pageW * s);
+    pageH = Math.max(1, pageH * s);
+  }
+  const pg = doc.addPage([pageW, pageH]);
+  pg.drawImage(img, { x: 0, y: 0, width: pageW, height: pageH });
   const saved = await doc.save();
   if (_imgPdfCache.size >= 6) _imgPdfCache.delete(_imgPdfCache.keys().next().value);
   _imgPdfCache.set(sig, saved);
@@ -570,7 +623,7 @@ async function openBytes(k, buf, name, path, skipStart = false) {
   const rawU8Check = buf instanceof Uint8Array ? buf : b2u(buf);
   const isPdfHeader = rawU8Check.length >= 4 && rawU8Check[0] === 0x25 && rawU8Check[1] === 0x50 && rawU8Check[2] === 0x44 && rawU8Check[3] === 0x46;
   if (!isPdfHeader && /\.(step|stp|sldprt|sldasm|slddrw|stl|obj|kensho3d)$/i.test(name || '') && typeof window.openSolidWorks3DFile === 'function') {
-    await window.openSolidWorks3DFile({ name, bytes, path }, k || 'A');
+    await window.openSolidWorks3DFile({ name, bytes: rawU8Check, path }, k || 'A');
     return;
   }
   if (!isPdfHeader && (/\.(dxf|dwg)$/i.test(name || '') || isCAMExt(name || '')) && typeof window.openExternalCADOrCAM === 'function') {
@@ -707,19 +760,23 @@ async function loadFile(k, f, skipStart = false) {
   }
 }
 function resetCompareAlignment() {
-  if (S.align) {
-    S.align.dx = 0; S.align.dy = 0; S.align.scale = 1; S.align.rot = 0;
-  }
-  S.ox = 0; S.oy = 0;
-  if (S.rot) { S.rot.A = 0; S.rot.B = 0; }
-  if (S.mir) { S.mir.A = { x: false, y: false }; S.mir.B = { x: false, y: false }; }
-  if (typeof window.setCompareSlotMirror === 'function') {
-    try { window.setCompareSlotMirror('A', 'x', false); window.setCompareSlotMirror('A', 'y', false); } catch (_e) {}
-    try { window.setCompareSlotMirror('B', 'x', false); window.setCompareSlotMirror('B', 'y', false); } catch (_e) {}
-  }
-  if (typeof clearCache === 'function') clearCache();
-  if (typeof show === 'function') show(S.page || 1);
-  if (typeof status === 'function') status('Reset Compare alignment, rotation, and mirror to 0.');
+  if ($('#dx')) $('#dx').value = '0';
+  if ($('#dy')) $('#dy').value = '0';
+  if ($('#rp-cur-dx')) $('#rp-cur-dx').textContent = '0';
+  if ($('#rp-cur-dy')) $('#rp-cur-dy').textContent = '0';
+  S.degA = 0; S.degB = 0;
+  S.rotA = 0; S.rotB = 0;
+  S.mirrorXA = false; S.mirrorYA = false;
+  S.mirrorXB = false; S.mirrorYB = false;
+  if (S.pageOffsets && typeof S.pageOffsets.clear === 'function') S.pageOffsets.clear();
+  S.gen = (S.gen || 0) + 1;
+  if (typeof clearRenderCache === 'function') clearRenderCache();
+  if (typeof clearMips === 'function') clearMips();
+  if (typeof syncCompareRotationUI === 'function') syncCompareRotationUI();
+  const pageNum = (S.cur && S.cur.n) ? S.cur.n : 1;
+  if (typeof show === 'function' && (S.A || S.B)) show(pageNum);
+  if (typeof window.rpSharpen === 'function') window.rpSharpen();
+  if (typeof st === 'function') st('Reset Compare alignment (dx/dy), rotation, and mirror to 0.');
   return true;
 }
 
@@ -728,9 +785,12 @@ function setBlinkIntervalMs(ms) {
   S.blinkMs = val;
   if (S.mode === 'blink') {
     clearInterval(S.timer);
-    S.timer = setInterval(() => { if (document.body.dataset.view === 'compare') { S.phase ^= 1; paint(); } }, val);
+    S.timer = setInterval(() => {
+      const curtainActive = !!(window.UIRibbon && window.UIRibbon.isCurtainActive && window.UIRibbon.isCurtainActive());
+      if (document.body.dataset.view === 'compare' && !curtainActive) { S.phase ^= 1; paint(); }
+    }, val);
   }
-  if (typeof status === 'function') status(`Blink speed set to ${val}ms.`);
+  if (typeof st === 'function') st(`Blink speed set to ${val}ms.`);
   return val;
 }
 
@@ -744,7 +804,10 @@ function getCompareDiffSummary() {
     const textChanges = [...(d.added || []), ...(d.removed || []), ...(d.modified || [])].filter(x => x && (x.type === 'TEXT' || (x.entA && x.entA.type === 'TEXT') || (x.entB && x.entB.type === 'TEXT'))).length;
     return { mode: 'dxf', total: added + removed + modified, added, removed, modified, textChanges };
   }
-  const regs = (S.regions && S.regions[S.page || 1]) || S.changes || [];
+  const pageNum = (S.cur && S.cur.n) || S.n || 1;
+  const regs = (S.cur && Array.isArray(S.cur.regions))
+    ? S.cur.regions
+    : ((S.scan && Array.isArray(S.scan[pageNum])) ? S.scan[pageNum] : ((S.regions && S.regions[pageNum]) || S.changes || []));
   let added = 0, removed = 0, modified = 0;
   for (const r of regs) {
     if (!r) continue;
@@ -758,18 +821,22 @@ function getCompareDiffSummary() {
 async function exportCompareDiffsJSON() {
   const summary = getCompareDiffSummary();
   const ds = (typeof window !== 'undefined' && window.DXFState) ? window.DXFState : null;
+  const pageNum = (S.cur && S.cur.n) || S.n || 1;
+  const pdfRegs = (S.cur && Array.isArray(S.cur.regions))
+    ? S.cur.regions
+    : ((S.scan && Array.isArray(S.scan[pageNum])) ? S.scan[pageNum] : ((S.regions && S.regions[pageNum]) || S.changes || []));
   const items = (ds && ds._isActiveDXFSession && ds.lastEntityDiff)
     ? {
         added: (ds.lastEntityDiff.added || []).slice(0, 2000),
         removed: (ds.lastEntityDiff.removed || []).slice(0, 2000),
         modified: (ds.lastEntityDiff.modified || []).slice(0, 2000)
       }
-    : ((S.regions && S.regions[S.page || 1]) || S.changes || []);
+    : pdfRegs;
   const payload = JSON.stringify({
     exportedAt: new Date().toISOString(),
-    fileA: (ds && ds._isActiveDXFSession ? ds.nameA : S.nameA) || '',
-    fileB: (ds && ds._isActiveDXFSession ? ds.nameB : S.nameB) || '',
-    page: S.page || 1,
+    fileA: (ds && ds._isActiveDXFSession ? ds.nameA : ((S.names && S.names.A) || S.nameA)) || '',
+    fileB: (ds && ds._isActiveDXFSession ? ds.nameB : ((S.names && S.names.B) || S.nameB)) || '',
+    page: pageNum,
     summary,
     differences: items
   }, null, 2);
@@ -779,7 +846,7 @@ async function exportCompareDiffsJSON() {
       bytes: new TextEncoder().encode(payload),
       filters: [{ name: 'JSON Audit Report (.json)', extensions: ['json'] }]
     });
-    if (saved && typeof status === 'function') status(`Exported Compare Diff JSON: ${saved}`);
+    if (saved && typeof st === 'function') st(`Exported Compare Diff JSON: ${saved}`);
     return saved;
   }
   return payload;
@@ -805,6 +872,9 @@ window.setCADStudioMode = function(mode = '2d') {
       if (window.SolidWorksStudio && typeof window.SolidWorksStudio.mountSolidWorksUI === 'function') {
         window.SolidWorksStudio.mountSolidWorksUI(swHost);
         window.SolidWorksStudio.render3DCanvas();
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => window.SolidWorksStudio.render3DCanvas());
+        }
       }
     }
     if (swBtn) swBtn.classList.add('on');
@@ -826,6 +896,12 @@ window.openSolidWorks3DFile = async function(fileObj, slot = 'A') {
 if (typeof document !== 'undefined') {
   const _swNavBtn = document.getElementById('nav-solidworks');
   if (_swNavBtn) _swNavBtn.onclick = () => window.setCADStudioMode('solidworks');
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === '4') {
+      e.preventDefault();
+      window.setCADStudioMode('solidworks');
+    }
+  });
   document.querySelectorAll('nav [data-v]').forEach(btn => {
     btn.addEventListener('click', () => {
       const swHost = document.getElementById('sw-studio-host');
@@ -947,6 +1023,8 @@ $('#swap').onclick = () => {
   if (window.rpPushCompareHistory) window.rpPushCompareHistory('Swap A and B');
   S.gen = (S.gen || 0) + 1; clearRenderCache(); clearMips();
   [S.A, S.B] = [S.B, S.A];
+  [S.docA, S.docB] = [S.docB, S.docA];
+  if (S.rawBytes) [S.rawBytes.A, S.rawBytes.B] = [S.rawBytes.B, S.rawBytes.A];
   [S.names.A, S.names.B] = [S.names.B, S.names.A];
   S.paths = S.paths || {};
   [S.paths.A, S.paths.B] = [S.paths.B, S.paths.A];
@@ -2088,7 +2166,25 @@ function overlayData(r, m) {
   return o;
 }
 function paint() {
-  const r = S.cur; if (!r) return; clearMips(); S._isCAMScan = false; S.preview = null;
+  const r = S.cur; if (!r) return;
+  const isBlinkSwap = (S.mode === 'blink' && !(window.UIRibbon && window.UIRibbon.isCurtainActive && window.UIRibbon.isCurtainActive()));
+  if (isBlinkSwap) {
+    // Cache separate mip pyramids for Rev A (phase 0) and Rev B (phase 1) so blink mode never thrashes GC every 600ms
+    const prevKey = S._blinkMipPageKey;
+    const curKey = `${r.n}|${r.W}x${r.H}|${S.gen || 0}`;
+    if (prevKey !== curKey) {
+      clearMips();
+      S._blinkMips = [null, null];
+      S._blinkMipPageKey = curKey;
+    } else if (S._blinkMips) {
+      S.mips = S._blinkMips[S.phase] || [];
+    }
+  } else {
+    clearMips();
+    S._blinkMips = null;
+    S._blinkMipPageKey = '';
+  }
+  S._isCAMScan = false; S.preview = null;
   const cv = $('#cv'), x = cv.getContext('2d'), W = r.W, H = r.H, m = S.mode, side = m === 'side';
   const curtainOn = !!(window.UIRibbon && window.UIRibbon.isCurtainActive && window.UIRibbon.isCurtainActive());
   const targetW = (!curtainOn && side) ? W * 2 + 24 : W;
@@ -2099,7 +2195,9 @@ function paint() {
   else if (side) { x.fillStyle = '#3a4a44'; x.fillRect(0, 0, cv.width, H); x.putImageData(r.A, 0, 0); x.putImageData(r.B, W + 24, 0); }
   else x.putImageData(overlayData(r, m), 0, 0);
   cv._paintGen = (cv._paintGen || 0) + 1;
-  markers(); applyView(); if (window.rpAfterPaint) window.rpAfterPaint();
+  markers(); applyView();
+  if (isBlinkSwap && S._blinkMips) S._blinkMips[S.phase] = S.mips;
+  if (window.rpAfterPaint) window.rpAfterPaint();
 }
 function drawMarkersToContext(x, k, offs, pp, r) {
   igList().forEach(g => offs.forEach(o => {
@@ -2367,21 +2465,26 @@ function buildMip(L) {
       const d8 = imgD.data;
       const cls = r.cls, RW = r.W, RH = r.H, mw = c.width, mh = c.height;
       const shift = i;
-      const stride = Math.max(1, 1 << shift);
-      for (let y = 0; y < RH; y += stride) {
+      // Full-coverage mipmap diff scan: inspect every pixel so thin 1-3px CAD diff lines never vanish when zoomed out
+      const hitMask = new Uint8Array(mw * mh);
+      for (let y = 0; y < RH; y++) {
         const my = Math.min(mh - 1, y >> shift);
         const mRow = my * mw;
         const rRow = y * RW;
-        for (let xPx = 0; xPx < RW; xPx += stride) {
+        for (let xPx = 0; xPx < RW; xPx++) {
           const t = cls[rRow + xPx];
           if ((t === 1 && lA) || (t === 2 && lB)) {
             const mx = Math.min(mw - 1, xPx >> shift);
-            const idx = (mRow + mx) * 4;
-            const cc = t === 1 ? rgbA : rgbB;
-            d8[idx] = Math.round(d8[idx] * 0.45 + cc[0] * 0.55);
-            d8[idx + 1] = Math.round(d8[idx + 1] * 0.45 + cc[1] * 0.55);
-            d8[idx + 2] = Math.round(d8[idx + 2] * 0.45 + cc[2] * 0.55);
-            d8[idx + 3] = 255;
+            const mIdx = mRow + mx;
+            if (!hitMask[mIdx]) {
+              hitMask[mIdx] = t;
+              const idx = mIdx * 4;
+              const cc = t === 1 ? rgbA : rgbB;
+              d8[idx] = Math.round(d8[idx] * 0.45 + cc[0] * 0.55);
+              d8[idx + 1] = Math.round(d8[idx + 1] * 0.45 + cc[1] * 0.55);
+              d8[idx + 2] = Math.round(d8[idx + 2] * 0.45 + cc[2] * 0.55);
+              d8[idx + 3] = 255;
+            }
           }
         }
       }
@@ -2531,9 +2634,35 @@ function renderList() {
     const d = document.createElement('div'), dn = S.done[r.n + ':' + i];
     const kindInfo = KIND[g.kind] || KIND.c;
     d.className = 'it' + (i === S.sel ? ' sel' : '') + (dn ? ' done' : '');
-    const dxfTag = g.dxfLayer ? ` <span style="font-size:10px;color:#38bdf8;font-weight:700">[${g.dxfLayer}]</span>` : "";
-    const dxfDesc = g.dxfSummary ? `<div style="font-size:10.5px;opacity:.85">${g.dxfSummary}</div>` : "";
-    d.innerHTML = `<input type="checkbox" ${dn ? 'checked' : ''} title="Mark as reviewed"><div><span class="tag ${kindInfo[1]}">${kindInfo[0]}</span> #${i + 1}${dxfTag}${dxfDesc}<small>${fmtUnitVal(g.w, g.dpi)} x ${fmtUnitVal(g.h, g.dpi)} ${uName} at (${fmtUnitVal(g.x, g.dpi)}, ${fmtUnitVal(g.y, g.dpi)}) ${uName}</small></div>`;
+    // Security: Construct diff list item with safe DOM nodes + textContent (prevents HTML injection from untrusted DXF metadata)
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!dn;
+    cb.title = 'Mark as reviewed';
+    const body = document.createElement('div');
+    const tagSpan = document.createElement('span');
+    tagSpan.className = 'tag ' + kindInfo[1];
+    tagSpan.textContent = kindInfo[0];
+    body.appendChild(tagSpan);
+    body.appendChild(document.createTextNode(' #' + (i + 1)));
+    if (g.dxfLayer) {
+      body.appendChild(document.createTextNode(' '));
+      const layerSpan = document.createElement('span');
+      layerSpan.style.cssText = 'font-size:10px;color:#38bdf8;font-weight:700';
+      layerSpan.textContent = '[' + String(g.dxfLayer) + ']';
+      body.appendChild(layerSpan);
+    }
+    if (g.dxfSummary) {
+      const descDiv = document.createElement('div');
+      descDiv.style.cssText = 'font-size:10.5px;opacity:.85';
+      descDiv.textContent = String(g.dxfSummary);
+      body.appendChild(descDiv);
+    }
+    const sm = document.createElement('small');
+    sm.textContent = `${fmtUnitVal(g.w, g.dpi)} x ${fmtUnitVal(g.h, g.dpi)} ${uName} at (${fmtUnitVal(g.x, g.dpi)}, ${fmtUnitVal(g.y, g.dpi)}) ${uName}`;
+    body.appendChild(sm);
+    d.appendChild(cb);
+    d.appendChild(body);
     d.onclick = e => {
       if (e.target.tagName === 'INPUT') {
         const chk = !!e.target.checked;
@@ -3194,9 +3323,12 @@ vp.onwheel = e => {
   v.k = k;
   const zLbl = $('#cHudZoomLabel');
   if (zLbl) zLbl.textContent = Math.round(k * 100) + '%';
-  applyView(true);
-  if (!_wheelRaf && typeof requestAnimationFrame === 'function') {
-    _wheelRaf = requestAnimationFrame(() => { _wheelRaf = 0; applyView(true); });
+  if (typeof requestAnimationFrame === 'function') {
+    if (!_wheelRaf) {
+      _wheelRaf = requestAnimationFrame(() => { _wheelRaf = 0; applyView(true); });
+    }
+  } else {
+    applyView(true);
   }
   clearTimeout(S.mt); S.mt = setTimeout(markers, 75);
 };
@@ -3530,6 +3662,10 @@ $('#report').onclick = exportReport;
 
 Object.assign(ACT, { openA: () => pickCompare('A'), openB: () => pickCompare('B'), swap: () => $('#swap').click(), align: autoAlign, nextDiff: () => nextDiff(1), prevDiff: () => nextDiff(-1), markAll: () => $('#markAll').click(), rescan: async () => { if (!(S.A && S.B)) return; const N = Math.max(S.A.numPages, S.B.numPages), P = $('#pages'); if (!S.cur || P.querySelectorAll('.pg').length !== N) await start(); const sb = P.querySelector('.sm'); if (sb && N > PREF.scanMax) sb.remove(); await scanAll(tok); }, scanAll: () => ACT.rescan && ACT.rescan(), ignore: () => $('#ignBtn').click(), report: exportReport, savePng, saveCsv, cFit: fit, cZoomIn: () => zoomBy(1.25), cZoomOut: () => zoomBy(1 / 1.25) });
 function setView(v) {
+  if (v === 'solidworks' && typeof window.setCADStudioMode === 'function') {
+    window.setCADStudioMode('solidworks');
+    return;
+  }
   closeCtx();
   if (v !== 'edit' && window.RE && window.RE.E && window.RE.E.inlineText && window.RE.commitInlineTextEditor) {
     window.RE.commitInlineTextEditor();
@@ -3556,6 +3692,7 @@ function setView(v) {
   $('#view-compare').hidden = v !== 'compare';
   $('#view-edit').hidden = v !== 'edit';
   if ($('#view-dxf')) $('#view-dxf').hidden = v !== 'dxf';
+  if ($('#sw-studio-host')) $('#sw-studio-host').hidden = true;
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   if (v === 'edit' && window.DXFStudio && typeof window.DXFStudio.syncToPDFStudioIfNeeded === 'function') {
     window.DXFStudio.syncToPDFStudioIfNeeded();
@@ -3584,7 +3721,16 @@ function setView(v) {
   if (window.updateTitle) window.updateTitle();
 }
 window.setView = setView;
-document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setView(b.dataset.v));
+document.querySelectorAll('#modes button').forEach(b => {
+  if (b.id === 'nav-solidworks' || b.dataset.v === 'solidworks') {
+    b.onclick = () => window.setCADStudioMode('solidworks');
+  } else if (b.dataset.v) {
+    b.onclick = () => {
+      if (window.setCADStudioMode) window.setCADStudioMode('2d');
+      setView(b.dataset.v);
+    };
+  }
+});
 if (typeof ResizeObserver !== 'undefined' && $('#vp')) {
   let vpLastW = 0, vpLastH = 0, vpPendingDw = 0, vpPendingDh = 0, vpLastInit = false, vpRaf = 0, vpSettleT = 0;
   new ResizeObserver(entries => {

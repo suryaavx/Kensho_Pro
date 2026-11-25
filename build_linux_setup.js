@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Kensho Pro 1.2.3 — Linux Portable (.tar.gz) & Self-Extracting Setup (.run) Builder
+ * Kensho Pro 1.2.3.2 — Linux Portable (.tar.gz) & Self-Extracting Setup (.run) Builder
  *
  * Works alongside electron-builder (--linux dir / AppImage / deb) to produce:
- *   1. dist/KenshoPro-Portable-1.2.3-linux-x64.tar.gz (Portable bundle with self-contained ./portable-data profile)
- *   2. dist/KenshoPro-Setup-1.2.3-linux-x64.run       (Self-extracting universal Linux setup installer executable)
+ *   1. dist/KenshoPro-Portable-1.2.3.2-linux-x64.tar.gz (Portable bundle with self-contained ./portable-data profile)
+ *   2. dist/KenshoPro-Setup-1.2.3.2-linux-x64.run       (Self-extracting universal Linux setup installer executable)
  */
 const fs = require('fs');
 const path = require('path');
@@ -13,29 +13,29 @@ const { execFileSync, execSync } = require('child_process');
 const ROOT = __dirname;
 const DIST_DIR = path.join(ROOT, 'dist');
 const UNPACKED_DIR = path.join(DIST_DIR, 'linux-unpacked');
-const PORTABLE_TAR = path.join(DIST_DIR, 'KenshoPro-Portable-1.2.3-linux-x64.tar.gz');
-const SETUP_RUN = path.join(DIST_DIR, 'KenshoPro-Setup-1.2.3-linux-x64.run');
+const PORTABLE_TAR = path.join(DIST_DIR, 'KenshoPro-Portable-1.2.3.2-linux-x64.tar.gz');
+const SETUP_RUN = path.join(DIST_DIR, 'KenshoPro-Setup-1.2.3.2-linux-x64.run');
 
 function createPortableLauncher(targetDir) {
   const launcherPath = path.join(targetDir, 'KenshoPro-Portable.sh');
   const script = [
     '#!/usr/bin/env bash',
-    '# Kensho Pro 1.2.3 — Portable Linux Launcher (stores config/session data in ./portable-data)',
+    '# Kensho Pro 1.2.3.2 — Portable Linux Launcher (stores config/session data in ./portable-data)',
     'set -e',
     'SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
     'PORTABLE_DATA="$SELF_DIR/portable-data"',
     'mkdir -p "$PORTABLE_DATA"',
     'export XDG_CONFIG_HOME="$PORTABLE_DATA"',
     'if [ -x "$SELF_DIR/kensho-pro" ]; then',
-    '  exec "$SELF_DIR/kensho-pro" --no-sandbox --user-data-dir="$PORTABLE_DATA" "$@"',
+    '  exec "$SELF_DIR/kensho-pro" --user-data-dir="$PORTABLE_DATA" "$@"',
     'elif [ -x "$SELF_DIR/Kensho Pro" ]; then',
-    '  exec "$SELF_DIR/Kensho Pro" --no-sandbox --user-data-dir="$PORTABLE_DATA" "$@"',
+    '  exec "$SELF_DIR/Kensho Pro" --user-data-dir="$PORTABLE_DATA" "$@"',
     'elif [ -x "$SELF_DIR/redline-pro" ]; then',
-    '  exec "$SELF_DIR/redline-pro" --no-sandbox --user-data-dir="$PORTABLE_DATA" "$@"',
+    '  exec "$SELF_DIR/redline-pro" --user-data-dir="$PORTABLE_DATA" "$@"',
     'elif [ -x "$SELF_DIR/node_modules/.bin/electron" ]; then',
-    '  exec "$SELF_DIR/node_modules/.bin/electron" "$SELF_DIR" --no-sandbox --user-data-dir="$PORTABLE_DATA" "$@"',
+    '  exec "$SELF_DIR/node_modules/.bin/electron" "$SELF_DIR" --user-data-dir="$PORTABLE_DATA" "$@"',
     'elif command -v electron >/dev/null 2>&1; then',
-    '  exec electron "$SELF_DIR" --no-sandbox --user-data-dir="$PORTABLE_DATA" "$@"',
+    '  exec electron "$SELF_DIR" --user-data-dir="$PORTABLE_DATA" "$@"',
     'else',
     '  echo "Error: Kensho Pro binary not found in $SELF_DIR" >&2',
     '  exit 1',
@@ -50,11 +50,11 @@ function buildSelfExtractingRunInstaller(tarGzPath, outRunPath) {
   const header = [
     '#!/usr/bin/env bash',
     '# ============================================================================',
-    '# Kensho Pro 1.2.3 — Self-Extracting Universal Linux Setup Installer (.run)',
+    '# Kensho Pro 1.2.3.2 — Self-Extracting Universal Linux Setup Installer (.run)',
     '# Usage:',
-    '#   ./KenshoPro-Setup-1.2.3-linux-x64.run              (Install for current user or root)',
-    '#   sudo ./KenshoPro-Setup-1.2.3-linux-x64.run         (System-wide install to /opt/KenshoPro)',
-    '#   ./KenshoPro-Setup-1.2.3-linux-x64.run --uninstall  (Cleanly uninstall Kensho Pro)',
+    '#   ./KenshoPro-Setup-1.2.3.2-linux-x64.run              (Install for current user or root)',
+    '#   sudo ./KenshoPro-Setup-1.2.3.2-linux-x64.run         (System-wide install to /opt/KenshoPro)',
+    '#   ./KenshoPro-Setup-1.2.3.2-linux-x64.run --uninstall  (Cleanly uninstall Kensho Pro)',
     '# ============================================================================',
     'set -e',
     'TMP_EXTRACT="$(mktemp -d /tmp/kenshopro-setup.XXXXXX)"',
@@ -109,10 +109,14 @@ function buildLinuxSetupAndPortable() {
   if (fs.existsSync(path.join(ROOT, 'build', 'icon.png'))) {
     fs.copyFileSync(path.join(ROOT, 'build', 'icon.png'), path.join(UNPACKED_DIR, 'build', 'icon.png'));
   }
+  if (fs.existsSync(path.join(ROOT, 'build', 'logo.png'))) {
+    fs.copyFileSync(path.join(ROOT, 'build', 'logo.png'), path.join(UNPACKED_DIR, 'build', 'logo.png'));
+  }
   const mimeXml = path.join(ROOT, 'build', 'linux', 'in.textportdocx.kenshopro.xml');
   if (fs.existsSync(mimeXml)) {
     fs.copyFileSync(mimeXml, path.join(buildDest, 'in.textportdocx.kenshopro.xml'));
   }
+  execFileSync(process.execPath, [path.join(ROOT, 'package_audit.js'), '--verify-dist', UNPACKED_DIR, '--fix'], { cwd: ROOT, stdio: 'inherit' });
 
   // Create portable launcher inside linux-unpacked
   createPortableLauncher(UNPACKED_DIR);

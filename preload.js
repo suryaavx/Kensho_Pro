@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('native', {
   convertDwgToDxf: o => ipcRenderer.invoke('convert-dwg-to-dxf', o),
   convertSolidWorksToStep: p => ipcRenderer.invoke('convert-solidworks-to-step', p),
   copyText: t => ipcRenderer.invoke('copy-text', t),
+  getGpuInfo: () => ipcRenderer.invoke('get-gpu-info'),
   platform: process.platform,
   getPathForFile: f => {
     try {

@@ -303,7 +303,7 @@
         const p1 = pts[i];
         const p2 = pts[(i + 1) % pts.length];
         if (!p1 || !p2) continue;
-        const bulge = (pts === ent.points && p1[2]) ? Number(p1[2]) : 0;
+        const bulge = (pts === ent.points) ? Number(p1[2] || (ent.bulges && ent.bulges[i]) || 0) : 0;
         if (Math.abs(bulge) > 1e-5) {
           const arcPts = tessFn(p1[0], p1[1], p2[0], p2[1], bulge, 16);
           let prev = mapW(p1[0], p1[1]);
@@ -396,7 +396,8 @@
         ? parser._getBlock(ent.blockName)
         : (parser.blocks && (parser.blocks[ent.blockName] || parser.blocks[String(ent.blockName || '').toUpperCase()]));
       if (blk && Array.isArray(blk.entities) && blk.entities.length > 0) {
-        const rotDeg = (Number(ent.rotation) || 0) + (parentTf ? (parentTf.rotDeg || 0) : 0);
+        const mirrorFlip = (parentTf && ((parentTf.sx || 1) * (parentTf.sy || 1) < 0)) ? -1 : 1;
+        const rotDeg = (Number(ent.rotation) || 0) * mirrorFlip + (parentTf ? (parentTf.rotDeg || 0) : 0);
         const rad = (rotDeg * Math.PI) / 180;
         const [insWx, insWy] = mapW(ent.x || 0, ent.y || 0);
         const tf = {
@@ -623,6 +624,7 @@
 
     const pushBoxAt = (px, py) => {
       if (!Number.isFinite(px) || !Number.isFinite(py)) return;
+      if (px + boxPx * 0.5 < 0 || px - boxPx * 0.5 > maxW || py + boxPx * 0.5 < 0 || py - boxPx * 0.5 > maxH) return;
       const bx = Math.max(0, Math.min(maxW - boxPx, px - boxPx * 0.5));
       const by = Math.max(0, Math.min(maxH - boxPx, py - boxPx * 0.5));
       rawBoxes.push({

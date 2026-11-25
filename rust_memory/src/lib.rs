@@ -11,8 +11,33 @@ static ALLOCATED_BYTES: AtomicUsize = AtomicUsize::new(0);
 static PEAK_BYTES: AtomicUsize = AtomicUsize::new(0);
 
 #[inline]
-const fn align16(size: usize) -> usize {
-    (size + 15) & !15
+fn align16_checked(size: usize) -> Option<usize> {
+    size.checked_add(15).map(|v| v & !15)
+}
+
+#[inline]
+fn in_arena_bounds(ptr: *const u8, size: usize) -> bool {
+    if ptr.is_null() || size == 0 {
+        return false;
+    }
+    let addr = ptr as usize;
+    if addr < 4096 {
+        return false;
+    }
+    let end = match addr.checked_add(size) {
+        Some(v) => v,
+        None => return false,
+    };
+    #[cfg(target_arch = "wasm32")]
+    {
+        let cur_bytes = core::arch::wasm32::memory_size(0).saturating_mul(65536);
+        end <= cur_bytes
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = end;
+        true
+    }
 }
 
 /// Resets the linear memory arena pointer and active allocation counter.
@@ -25,19 +50,33 @@ pub extern "C" fn rust_mem_reset() {
 /// Allocates a 16-byte aligned region in Rust/WASM linear memory and updates high-water peak metrics.
 #[no_mangle]
 pub extern "C" fn rust_mem_alloc(size: usize) -> usize {
-    let aligned = align16(size);
-    let ptr = BUMP_PTR.fetch_add(aligned, Ordering::SeqCst);
+    if size == 0 {
+        return 0;
+    }
+    let aligned = match align16_checked(size) {
+        Some(v) if v > 0 => v,
+        _ => return 0,
+    };
+    let ptr = BUMP_PTR.load(Ordering::SeqCst);
+    let end = match ptr.checked_add(aligned) {
+        Some(v) => v,
+        None => return 0,
+    };
     #[cfg(target_arch = "wasm32")]
     {
-        let end = ptr.saturating_add(aligned);
-        let cur_bytes = core::arch::wasm32::memory_size(0) * 65536;
+        let cur_bytes = core::arch::wasm32::memory_size(0).saturating_mul(65536);
         if end > cur_bytes {
-            let needed_pages = (end - cur_bytes + 65535) / 65536;
-            let _ = core::arch::wasm32::memory_grow(0, needed_pages);
+            let delta = end - cur_bytes;
+            let needed_pages = (delta / 65536) + if (delta % 65536) != 0 { 1 } else { 0 };
+            let grew = core::arch::wasm32::memory_grow(0, needed_pages);
+            if grew == usize::MAX {
+                return 0;
+            }
         }
     }
+    BUMP_PTR.store(end, Ordering::SeqCst);
     let prev = ALLOCATED_BYTES.fetch_add(aligned, Ordering::SeqCst);
-    let next = prev + aligned;
+    let next = prev.saturating_add(aligned);
     let mut cur_peak = PEAK_BYTES.load(Ordering::Relaxed);
     while next > cur_peak {
         match PEAK_BYTES.compare_exchange_weak(cur_peak, next, Ordering::SeqCst, Ordering::Relaxed) {
@@ -51,15 +90,21 @@ pub extern "C" fn rust_mem_alloc(size: usize) -> usize {
 /// Deterministically zeroes `[ptr .. ptr + size]` in linear memory and decrements active allocation count.
 #[no_mangle]
 pub unsafe extern "C" fn rust_mem_free(ptr: *mut u8, size: usize) -> usize {
-    if !ptr.is_null() && size > 0 {
-        core::ptr::write_bytes(ptr, 0, size);
+    if !in_arena_bounds(ptr as *const u8, size) {
+        return 0;
     }
-    let aligned = align16(size);
+    core::ptr::write_bytes(ptr, 0, size);
+    let aligned = match align16_checked(size) {
+        Some(v) => v,
+        None => return 0,
+    };
     let prev = ALLOCATED_BYTES.load(Ordering::SeqCst);
     let next = prev.saturating_sub(aligned);
     ALLOCATED_BYTES.store(next, Ordering::SeqCst);
-    if next == 0 {
-        BUMP_PTR.store(4096, Ordering::SeqCst);
+    let addr = ptr as usize;
+    let cur_bump = BUMP_PTR.load(Ordering::SeqCst);
+    if addr.checked_add(aligned) == Some(cur_bump) {
+        BUMP_PTR.store(if next == 0 { 4096 } else { addr }, Ordering::SeqCst);
     }
     size
 }
@@ -67,9 +112,10 @@ pub unsafe extern "C" fn rust_mem_free(ptr: *mut u8, size: usize) -> usize {
 /// Zeroes `[ptr .. ptr + size]` in linear memory without altering arena counters.
 #[no_mangle]
 pub unsafe extern "C" fn rust_mem_zero(ptr: *mut u8, size: usize) -> usize {
-    if !ptr.is_null() && size > 0 {
-        core::ptr::write_bytes(ptr, 0, size);
+    if !in_arena_bounds(ptr as *const u8, size) {
+        return 0;
     }
+    core::ptr::write_bytes(ptr, 0, size);
     size
 }
 
