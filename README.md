@@ -1,4 +1,4 @@
-# Kensho Pro 1.0 — Enterprise-Grade Engineering Review & Compare Studio
+# Kensho Pro 1.2.3.2 — Enterprise-Grade Engineering Review & Compare Studio
 
 **Publisher / Developer:** Kensho Studio · [textportdocx.in](https://textportdocx.in)  
 **Version:** 1.2.3.2<br>
